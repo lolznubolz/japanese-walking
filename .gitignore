@@ -1,0 +1,13 @@
+# NEVER commit private keys
+id_ed25519
+id_ed25519*
+*.pem
+
+# Flutter/build artifacts (generated in CI)
+japanese_walking/build/
+japanese_walking/.dart_tool/
+japanese_walking/android/
+japanese_walking/ios/
+japanese_walking/.idea/
+japanese_walking/*.iml
+.DS_Store

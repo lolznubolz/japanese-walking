@@ -1,0 +1,53 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Scaffold Android platform folder
+        working-directory: japanese_walking
+        run: flutter create . --platforms=android --org cc.lolznubolz --project-name japanese_walking
+
+      - name: Generate audio assets
+        working-directory: japanese_walking
+        run: python3 tools/generate_audio.py
+
+      - name: Patch AndroidManifest (permissions + app name)
+        working-directory: japanese_walking
+        run: python3 tools/patch_android.py
+
+      - name: Build release APK
+        working-directory: japanese_walking
+        run: |
+          flutter pub get
+          flutter build apk --release
+
+      - name: Rename APK
+        run: cp japanese_walking/build/app/outputs/flutter-apk/app-release.apk yaponskaya-hodba.apk
+
+      - name: Publish to release "latest"
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Японская ходьба — последняя сборка"
+          body: "APK собирается автоматически из main. Скачайте и установите (разрешите установку из неизвестных источников)."
+          files: yaponskaya-hodba.apk

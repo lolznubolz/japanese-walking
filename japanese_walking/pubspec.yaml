@@ -1,0 +1,36 @@
+name: japanese_walking
+description: "Japanese Interval Walking Training (IWT) — 3 min fast / 3 min slow, with adjustable metronome pace, haptics and heart-rate via BLE."
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.8.0 # Flutter 3.32+
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Audio: low-latency ticks for the metronome
+  audioplayers: ^6.1.0
+  # Strong, patterned vibration (Android) + basic haptics fallback (iOS)
+  vibration: ^2.0.0
+  # Keep the screen awake during a session
+  wakelock_plus: ^1.2.8
+  # Persist user settings (pace, cycles, sound choice, language)
+  shared_preferences: ^2.3.2
+  # BLE — connect smartwatches / chest straps exposing the standard
+  # Heart Rate service (0x180D)
+  flutter_blue_plus: ^1.34.5
+  # Apple Watch / Wear OS health data (steps, HR) via HealthKit / Health Connect
+  # (optional integration, see README)
+  # health: ^11.1.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/audio/

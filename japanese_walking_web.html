@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0E1116">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Японская ходьба · Japanese Walking</title>
+<style>
+  :root{
+    --bg:#0E1116; --card:rgba(255,255,255,.05); --txt:#ECEFF4; --dim:rgba(255,255,255,.55);
+    --fast:#FF7A59; --slow:#4FD8C4; --radius:24px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  body{margin:0; background:var(--bg); color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    min-height:100dvh; display:flex; justify-content:center}
+  .app{width:100%; max-width:430px; padding:20px 20px calc(20px + env(safe-area-inset-bottom))}
+  h1{font-size:28px; margin:0}
+  .sub{color:var(--dim); font-size:13px; margin:4px 0 20px}
+  .card{background:var(--card); border-radius:var(--radius); padding:18px; margin-bottom:14px}
+  .row{display:flex; justify-content:space-between; align-items:center; gap:10px}
+  .row+.row{margin-top:12px}
+  label{font-size:14px}
+  .val{font-weight:600; font-size:14px}
+  .val.fast{color:var(--fast)} .val.slow{color:var(--slow)}
+  input[type=range]{width:100%; accent-color:var(--slow); margin:6px 0 2px}
+  input[type=range].fast{accent-color:var(--fast)}
+  .switch{appearance:none; width:46px; height:28px; border-radius:14px; background:#333a45; position:relative; cursor:pointer; transition:.2s; flex:none}
+  .switch:checked{background:var(--slow)}
+  .switch::after{content:""; position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:50%; background:#fff; transition:.2s}
+  .switch:checked::after{left:21px}
+  button{border:0; border-radius:28px; padding:16px 24px; font-size:17px; font-weight:600; cursor:pointer; color:#0E1116; background:var(--slow); width:100%}
+  button.ghost{background:rgba(255,255,255,.1); color:var(--txt)}
+  button.danger{background:var(--fast)}
+  button.small{width:44px; height:44px; padding:0; border-radius:50%; font-size:24px; line-height:1}
+  .seg{display:flex; background:var(--card); border-radius:18px; padding:4px; margin-bottom:14px}
+  .seg button{padding:9px; border-radius:14px; background:transparent; color:var(--dim); font-size:14px}
+  .seg button.on{background:rgba(255,255,255,.12); color:var(--txt)}
+  .about{font-size:12px; color:var(--dim); line-height:1.5; margin:10px 0 18px}
+  /* session */
+  #session{display:none}
+  .bar{height:6px; border-radius:3px; background:rgba(255,255,255,.08); overflow:hidden; margin-bottom:8px}
+  .bar i{display:block; height:100%; width:0; background:var(--slow); transition:width .3s, background .4s}
+  .cyc{text-align:center; color:var(--dim); font-size:13px; margin-bottom:18px}
+  .ringWrap{position:relative; width:280px; height:280px; margin:0 auto 22px}
+  .ringWrap svg{transform:rotate(-90deg)}
+  .ringTxt{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center}
+  #phaseName{font-size:20px; font-weight:800; letter-spacing:4px; transition:color .4s}
+  #clock{font-size:62px; font-weight:700; font-variant-numeric:tabular-nums}
+  .bpmCard{display:flex; align-items:center; justify-content:space-between}
+  #bpmVal{font-size:26px; font-weight:700; text-align:center}
+  .bpmU{font-size:11px; color:var(--dim); text-align:center}
+  .hint{font-size:12px; color:var(--dim); text-align:center; margin:8px 0 14px}
+  .btns{display:flex; gap:10px}
+  #finished{display:none; text-align:center; padding-top:60px}
+  #finished .emoji{font-size:80px}
+  .note{font-size:11px; color:var(--dim); text-align:center; margin-top:10px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HOME -->
+  <div id="home">
+    <h1 data-i="appTitle"></h1>
+    <div class="sub" data-i="subtitle"></div>
+
+    <div class="seg" id="langSeg">
+      <button data-lang="ru" style="flex:1">Русский</button>
+      <button data-lang="en" style="flex:1">English</button>
+    </div>
+
+    <div class="card">
+      <div class="row"><label data-i="fastPace"></label><span class="val fast" id="fastVal"></span></div>
+      <input type="range" class="fast" id="fastBpm" min="90" max="190" step="1">
+      <div class="row"><label data-i="slowPace"></label><span class="val slow" id="slowVal"></span></div>
+      <input type="range" id="slowBpm" min="50" max="140" step="1">
+      <div class="row"><label data-i="phaseLength"></label><span class="val" id="phaseVal"></span></div>
+      <input type="range" id="phaseMin" min="1" max="5" step="0.5">
+      <div class="row"><label data-i="cyclesCount"></label><span class="val" id="cycVal"></span></div>
+      <input type="range" id="cycles" min="1" max="12" step="1">
+      <div class="row"><label data-i="totalTime"></label><span class="val" id="totalVal"></span></div>
+    </div>
+
+    <div class="card">
+      <div class="row"><label data-i="metronome"></label><input type="checkbox" class="switch" id="metroOn"></div>
+      <div class="row"><label data-i="vibration"></label><input type="checkbox" class="switch" id="vibOn"></div>
+      <div class="row"><label data-i="phaseSounds"></label><input type="checkbox" class="switch" id="sndOn"></div>
+      <div class="row"><label data-i="tickVolume"></label><span class="val" id="volVal"></span></div>
+      <input type="range" id="vol" min="0" max="100" step="5">
+    </div>
+
+    <div class="card">
+      <div class="row"><label data-i="smartMode"></label><input type="checkbox" class="switch" id="smartOn"></div>
+      <div id="smartSet" style="display:none">
+        <div class="row"><label data-i="age"></label><span class="val" id="ageVal"></span></div>
+        <input type="range" id="age" min="14" max="90" step="1">
+        <div class="row"><label data-i="targetZone"></label><span class="val" id="zoneVal"></span></div>
+        <div class="note" style="text-align:left" data-i="smartHint"></div>
+      </div>
+    </div>
+    <button id="startBtn" data-i="start"></button>
+    <button class="ghost" id="hrBtn" style="margin-top:10px">♥</button>
+    <div class="note" id="hrNote"></div>
+    <div class="note" data-i="vibNote"></div>
+    <div class="about" data-i="aboutText"></div>
+  </div>
+
+  <!-- SESSION -->
+  <div id="session">
+    <div class="bar"><i id="totalBar"></i></div>
+    <div class="cyc" id="cycLabel"></div>
+    <div class="ringWrap">
+      <svg width="280" height="280" viewBox="0 0 280 280">
+        <circle cx="140" cy="140" r="126" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="14"/>
+        <circle id="ring" cx="140" cy="140" r="126" fill="none" stroke="#4FD8C4" stroke-width="14"
+                stroke-linecap="round" stroke-dasharray="791.7" stroke-dashoffset="791.7"/>
+      </svg>
+      <div class="ringTxt">
+        <div id="phaseName"></div>
+        <div id="clock">03:00</div>
+        <div id="hrLive" style="color:var(--fast);font-size:15px;font-weight:600"></div>
+        <div id="zoneLive" style="color:rgba(255,255,255,.45);font-size:12px"></div>
+      </div>
+    </div>
+    <div class="card bpmCard">
+      <button class="small ghost" id="bpmMinus">−</button>
+      <div><div id="bpmVal"></div><div class="bpmU" data-i="stepsPerMin"></div></div>
+      <button class="small ghost" id="bpmPlus">+</button>
+    </div>
+    <div class="hint" data-i="adjustHint"></div>
+    <div class="btns">
+      <button class="ghost" id="pauseBtn" data-i="pause"></button>
+      <button class="danger" id="stopBtn" data-i="stop"></button>
+    </div>
+  </div>
+
+  <!-- FINISHED -->
+  <div id="finished">
+    <div class="emoji">🏆</div>
+    <h1 data-i="finished"></h1>
+    <p class="sub" data-i="sessionSummary"></p>
+    <button id="doneBtn" data-i="done"></button>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ---------- i18n ---------- */
+const I18N = {
+ ru:{appTitle:"Японская ходьба",subtitle:"Интервальная ходьба (IWT) — метод университета Синсю",
+  start:"Начать тренировку",fastPhase:"БЫСТРО",slowPhase:"СПОКОЙНО",finished:"Тренировка завершена!",
+  cycle:"Цикл",of:"из",pause:"Пауза",resume:"Продолжить",stop:"Завершить",
+  fastPace:"Темп быстрой ходьбы",slowPace:"Темп спокойной ходьбы",stepsPerMin:"шаг/мин",
+  phaseLength:"Длительность фазы",minutes:"мин",cyclesCount:"Циклы",totalTime:"Общее время",
+  metronome:"Метроном (тик под шаг)",vibration:"Вибрация при смене фазы",phaseSounds:"Звук при смене фазы",
+  tickVolume:"Громкость метронома",adjustHint:"Настройте темп кнопками ± под свой шаг",
+  sessionSummary:"Отличная работа! Сделайте лёгкую растяжку.",done:"Готово",
+  vibNote:"Вибрация работает в Chrome на Android. На iPhone — только звук.",
+  connectWatch:"♥ Подключить часы (пульс)",hrConnected:"♥ Подключено: ",
+  hrUnsupported:"Пульс по Bluetooth: откройте в Chrome на Android или компьютере (iPhone Safari не поддерживает).",
+  hrHint:"Включите на часах трансляцию пульса (Broadcast HR)",
+  smartMode:"Умный режим — авто-темп по пульсу",age:"Возраст",targetZone:"Целевые зоны",
+  smartHint:"Приложение само ускоряет или замедляет метроном, чтобы пульс держался в зоне: быстро 70–80% от максимума, спокойно 50–65%. Нужны подключённые часы.",
+  aboutText:"Метод проф. Хироси Носэ и Сидзуэ Масуки (Университет Синсю): 3 мин быстро («тяжело разговаривать») + 3 мин спокойно, 5 циклов = 30 минут, 4–5 раз в неделю. Эффекты в исследованиях: +10% выносливости, снижение давления и сахара, −20% риска возрастных заболеваний."},
+ en:{appTitle:"Japanese Walking",subtitle:"Interval Walking Training (IWT) — Shinshu University method",
+  start:"Start workout",fastPhase:"FAST",slowPhase:"EASY",finished:"Workout complete!",
+  cycle:"Cycle",of:"of",pause:"Pause",resume:"Resume",stop:"Finish",
+  fastPace:"Fast walking pace",slowPace:"Easy walking pace",stepsPerMin:"steps/min",
+  phaseLength:"Phase length",minutes:"min",cyclesCount:"Cycles",totalTime:"Total time",
+  metronome:"Metronome (tick per step)",vibration:"Vibrate on phase change",phaseSounds:"Sound on phase change",
+  tickVolume:"Metronome volume",adjustHint:"Tune the pace with ± to match your steps",
+  sessionSummary:"Great job! Do some light stretching.",done:"Done",
+  vibNote:"Vibration works in Chrome on Android. On iPhone — sound only.",
+  connectWatch:"♥ Connect watch (HR)",hrConnected:"♥ Connected: ",
+  hrUnsupported:"Bluetooth HR: open in Chrome on Android or desktop (iPhone Safari unsupported).",
+  hrHint:"Enable heart-rate broadcast on your watch (Broadcast HR)",
+  smartMode:"Smart mode — auto pace by heart rate",age:"Age",targetZone:"Target zones",
+  smartHint:"The app speeds up or slows down the metronome to keep your HR in zone: fast 70–80% of max, easy 50–65%. Requires a connected watch.",
+  aboutText:"Developed by Prof. Hiroshi Nose and Shizue Masuki (Shinshu University): 3 min fast (hard to talk) + 3 min easy, 5 cycles = 30 min, 4–5×/week. Studies: +10% aerobic capacity, lower blood pressure and glucose, −20% lifestyle-disease risk."}
+};
+
+/* ---------- settings ---------- */
+const DEF={fastBpm:135,slowBpm:100,phaseMin:3,cycles:5,metroOn:true,vibOn:true,sndOn:true,vol:80,lang:"ru",smartOn:false,age:40};
+let cfg;
+try{cfg=Object.assign({},DEF,JSON.parse(localStorage.getItem("jw")||"{}"));}catch(e){cfg=Object.assign({},DEF);}
+const save=()=>{try{localStorage.setItem("jw",JSON.stringify(cfg));}catch(e){}};
+const $=id=>document.getElementById(id);
+const t=k=>I18N[cfg.lang][k]||k;
+
+function applyI18n(){
+  document.querySelectorAll("[data-i]").forEach(el=>el.textContent=t(el.dataset.i));
+  document.querySelectorAll("#langSeg button").forEach(b=>b.classList.toggle("on",b.dataset.lang===cfg.lang));
+  syncHome();
+  if(typeof hrUI==="function")hrUI();
+}
+function syncHome(){
+  $("fastBpm").value=cfg.fastBpm; $("slowBpm").value=cfg.slowBpm;
+  $("phaseMin").value=cfg.phaseMin; $("cycles").value=cfg.cycles;
+  $("metroOn").checked=cfg.metroOn; $("vibOn").checked=cfg.vibOn; $("sndOn").checked=cfg.sndOn;
+  $("vol").value=cfg.vol;
+  $("fastVal").textContent=cfg.fastBpm+" "+t("stepsPerMin");
+  $("slowVal").textContent=cfg.slowBpm+" "+t("stepsPerMin");
+  $("phaseVal").textContent=cfg.phaseMin+" "+t("minutes");
+  $("cycVal").textContent=cfg.cycles;
+  $("totalVal").textContent=(cfg.phaseMin*2*cfg.cycles)+" "+t("minutes");
+  $("volVal").textContent=cfg.vol+"%";
+  $("smartOn").checked=cfg.smartOn; $("age").value=cfg.age; $("ageVal").textContent=cfg.age;
+  const zf=zone("fast"),zs=zone("slow");
+  $("zoneVal").textContent="🔥 "+zf[0]+"–"+zf[1]+" · 🌿 "+zs[0]+"–"+zs[1];
+  $("smartSet").style.display=cfg.smartOn?"block":"none";
+}
+/* HR-зоны: максимум по Танаке (208 − 0.7×возраст) */
+const hrMax=()=>Math.round(208-0.7*cfg.age);
+const zone=ph=>ph==="fast"
+  ?[Math.round(hrMax()*0.70),Math.round(hrMax()*0.80)]
+  :[Math.round(hrMax()*0.50),Math.round(hrMax()*0.65)];
+["fastBpm","slowBpm","phaseMin","cycles","vol","age"].forEach(id=>
+  $(id).addEventListener("input",e=>{cfg[id]=+e.target.value;save();syncHome();}));
+["metroOn","vibOn","sndOn","smartOn"].forEach(id=>
+  $(id).addEventListener("change",e=>{cfg[id]=e.target.checked;save();syncHome();}));
+document.querySelectorAll("#langSeg button").forEach(b=>
+  b.addEventListener("click",()=>{cfg.lang=b.dataset.lang;save();applyI18n();}));
+
+/* ---------- audio (Web Audio, no files needed) ---------- */
+let AC=null;
+const audio=()=>AC||(AC=new (window.AudioContext||window.webkitAudioContext)());
+function blip(time,freq,vol,dur=0.05){
+  const a=audio(),o=a.createOscillator(),g=a.createGain();
+  o.frequency.value=freq;o.connect(g);g.connect(a.destination);
+  g.gain.setValueAtTime(Math.max(vol,0.001),time);
+  g.gain.exponentialRampToValueAtTime(0.001,time+dur);
+  o.start(time);o.stop(time+dur+0.02);
+}
+function melody(notes,vol=0.6){
+  let tm=audio().currentTime+0.03;
+  notes.forEach(([f,d])=>{blip(tm,f,vol,d);tm+=d+0.05;});
+}
+const SND={fast:[[660,.14],[880,.14],[1320,.3]],slow:[[880,.2],[587,.45]],
+           finish:[[523,.16],[659,.16],[784,.16],[1046,.5]]};
+
+/* metronome: look-ahead scheduler — drift-free */
+const metro={timer:null,next:0,even:false,bpm:120,
+  start(bpm){this.bpm=bpm;if(this.timer)return;
+    this.next=audio().currentTime+0.1;this.even=false;
+    this.timer=setInterval(()=>{
+      const a=audio();
+      while(this.next<a.currentTime+0.12){
+        blip(this.next,this.even?1400:1800,cfg.vol/100*0.7);
+        this.even=!this.even;this.next+=60/this.bpm;
+      }
+    },25);},
+  stop(){clearInterval(this.timer);this.timer=null;}
+};
+
+/* ---------- session ---------- */
+const RING_LEN=791.7;
+const S={running:false,paused:false,phase:"fast",cycle:0,elapsed:0,last:0,ui:null,lock:null};
+const phaseMs=()=>cfg.phaseMin*60000;
+const curBpm=()=>S.phase==="fast"?cfg.fastBpm:cfg.slowBpm;
+const color=()=>S.phase==="fast"?"#FF7A59":"#4FD8C4";
+
+function show(id){["home","session","finished"].forEach(x=>$(x).style.display=x===id?"block":"none");}
+
+async function wakeLock(){try{S.lock=await navigator.wakeLock?.request("screen");}catch(e){}}
+document.addEventListener("visibilitychange",()=>{if(S.running&&document.visibilityState==="visible")wakeLock();});
+
+function announce(){
+  if(cfg.sndOn)melody(SND[S.phase]);
+  if(cfg.vibOn&&navigator.vibrate)
+    navigator.vibrate(S.phase==="fast"?[250,120,250,120,250]:[700]);
+}
+
+function startSession(){
+  audio().resume();
+  Object.assign(S,{running:true,paused:false,phase:"fast",cycle:0,elapsed:0,last:performance.now()});
+  show("session");wakeLock();
+  if(cfg.metroOn)metro.start(curBpm());
+  announce();render();
+  S.ui=setInterval(tick,200);
+}
+function tick(){
+  if(!S.running||S.paused)return;
+  const now=performance.now();S.elapsed+=now-S.last;S.last=now;
+  if(S.elapsed>=phaseMs())nextPhase();
+  /* умный режим: первые 45 с фазы пульс «догоняет», потом каждые 15 с
+     сверяем с зоной и двигаем темп на ±2 шаг/мин */
+  if(cfg.smartOn&&hrVal&&S.elapsed>45000&&now-(S.lastAdj||0)>15000){
+    const [lo,hi]=zone(S.phase);
+    if(hrVal<lo-2)adjust(2);
+    else if(hrVal>hi+2)adjust(-2);
+    S.lastAdj=now;
+  }
+  render();
+}
+function nextPhase(){
+  S.elapsed=0;
+  if(S.phase==="fast"){S.phase="slow";}
+  else{S.phase="fast";S.cycle++;
+    if(S.cycle>=cfg.cycles){finish(true);return;}}
+  metro.bpm=curBpm();announce();
+}
+function render(){
+  const remain=Math.max(0,phaseMs()-S.elapsed);
+  const mm=String(Math.floor(remain/60000)).padStart(2,"0");
+  const ss=String(Math.ceil(remain%60000/1000)%60).padStart(2,"0");
+  $("clock").textContent=mm+":"+ss;
+  $("phaseName").textContent=t(S.phase==="fast"?"fastPhase":"slowPhase");
+  $("phaseName").style.color=color();
+  const p=Math.min(1,S.elapsed/phaseMs());
+  const ring=$("ring");ring.setAttribute("stroke",color());
+  ring.setAttribute("stroke-dashoffset",RING_LEN*(1-p));
+  const done=S.cycle*2+(S.phase==="slow"?1:0);
+  const tp=(done+p)/(cfg.cycles*2)*100;
+  $("totalBar").style.width=tp+"%";$("totalBar").style.background=color();
+  $("cycLabel").textContent=t("cycle")+" "+(S.cycle+1)+" "+t("of")+" "+cfg.cycles;
+  $("bpmVal").textContent=curBpm();
+  $("pauseBtn").textContent=t(S.paused?"resume":"pause");
+  $("zoneLive").textContent=(cfg.smartOn&&hrDev)?t("targetZone")+" ♥ "+zone(S.phase).join("–"):"";
+}
+function finish(fanfare){
+  S.running=false;clearInterval(S.ui);metro.stop();
+  S.lock?.release().catch(()=>{});S.lock=null;
+  if(fanfare){
+    if(cfg.sndOn)melody(SND.finish);
+    if(cfg.vibOn&&navigator.vibrate)navigator.vibrate([300,150,300,150,600]);
+    show("finished");
+  } else show("home");
+}
+
+$("startBtn").onclick=startSession;
+$("pauseBtn").onclick=()=>{
+  if(S.paused){S.paused=false;S.last=performance.now();if(cfg.metroOn)metro.start(curBpm());}
+  else{S.paused=true;metro.stop();}
+  render();
+};
+$("stopBtn").onclick=()=>finish(false);
+$("doneBtn").onclick=()=>show("home");
+$("bpmMinus").onclick=()=>adjust(-2);
+$("bpmPlus").onclick=()=>adjust(2);
+
+/* ---------- heart rate via Web Bluetooth (standard service 0x180D) ---------- */
+let hrDev=null,hrVal=null;
+function hrUI(){
+  const btn=$("hrBtn");
+  if(!navigator.bluetooth){btn.style.display="none";$("hrNote").textContent=t("hrUnsupported");return;}
+  btn.textContent=hrDev?t("hrConnected")+(hrDev.name||""):t("connectWatch");
+  $("hrNote").textContent=hrDev?"":t("hrHint");
+  $("hrLive").textContent=hrVal?("♥ "+hrVal):"";
+}
+async function hrToggle(){
+  if(hrDev){hrDev.gatt.disconnect();return;}
+  try{
+    const d=await navigator.bluetooth.requestDevice({filters:[{services:["heart_rate"]}]});
+    const srv=await(await d.gatt.connect()).getPrimaryService("heart_rate");
+    const ch=await srv.getCharacteristic("heart_rate_measurement");
+    await ch.startNotifications();
+    ch.addEventListener("characteristicvaluechanged",e=>{
+      const v=e.target.value;
+      hrVal=(v.getUint8(0)&1)?v.getUint16(1,true):v.getUint8(1);
+      hrUI();
+    });
+    d.addEventListener("gattserverdisconnected",()=>{hrDev=null;hrVal=null;hrUI();});
+    hrDev=d;hrUI();
+  }catch(e){
+    if(e.name!=="NotFoundError"||!/cancel/i.test(e.message||""))
+      $("hrNote").textContent="⚠ "+e.name+": "+e.message;
+  }
+}
+$("hrBtn").onclick=hrToggle;
+function adjust(d){
+  if(S.phase==="fast")cfg.fastBpm=Math.min(190,Math.max(90,cfg.fastBpm+d));
+  else cfg.slowBpm=Math.min(140,Math.max(50,cfg.slowBpm+d));
+  save();metro.bpm=curBpm();render();
+}
+
+applyI18n();show("home");hrUI();
+</script>
+</body>
+</html>
