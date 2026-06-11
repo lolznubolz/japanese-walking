@@ -90,6 +90,15 @@
       <div class="row"><label data-i="phaseSounds"></label><input type="checkbox" class="switch" id="sndOn"></div>
       <div class="row"><label data-i="tickVolume"></label><span class="val" id="volVal"></span></div>
       <input type="range" id="vol" min="0" max="100" step="5">
+      <div class="row"><label data-i="voice"></label><input type="checkbox" class="switch" id="voiceOn"></div>
+      <div class="row"><label data-i="weight"></label><span class="val" id="weightVal"></span></div>
+      <input type="range" id="weight" min="40" max="150" step="1">
+    </div>
+
+    <div class="card" id="histCard" style="display:none">
+      <div class="row"><label>🔥 <span data-i="streak"></span></label><span class="val" id="streakVal"></span></div>
+      <div class="row"><label data-i="totalWorkouts"></label><span class="val" id="twVal"></span></div>
+      <div id="histList" style="margin-top:10px"></div>
     </div>
 
     <div class="card">
@@ -112,6 +121,7 @@
   <div id="session">
     <div class="bar"><i id="totalBar"></i></div>
     <div class="cyc" id="cycLabel"></div>
+    <div class="cyc" id="statsLive" style="margin-top:-14px"></div>
     <div class="ringWrap">
       <svg width="280" height="280" viewBox="0 0 280 280">
         <circle cx="140" cy="140" r="126" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="14"/>
@@ -141,6 +151,7 @@
   <div id="finished">
     <div class="emoji">🏆</div>
     <h1 data-i="finished"></h1>
+    <p class="sub" id="finStats"></p>
     <p class="sub" data-i="sessionSummary"></p>
     <button id="doneBtn" data-i="done"></button>
   </div>
@@ -164,6 +175,9 @@ const I18N = {
   hrHint:"Включите на часах трансляцию пульса (Broadcast HR)",
   smartMode:"Умный режим — авто-темп по пульсу",age:"Возраст",targetZone:"Целевые зоны",
   smartHint:"Приложение само ускоряет или замедляет метроном, чтобы пульс держался в зоне: быстро 70–80% от максимума, спокойно 50–65%. Нужны подключённые часы.",
+  voice:"Голосовые подсказки",weight:"Вес (для калорий)",kg:"кг",
+  sayFast:"Ускорьтесь!",saySlow:"Спокойный темп",sayDone:"Тренировка завершена. Отличная работа!",
+  streak:"Серия дней",totalWorkouts:"Всего тренировок",stepsU:"шагов",kcalU:"ккал",minU:"мин",
   aboutText:"Метод проф. Хироси Носэ и Сидзуэ Масуки (Университет Синсю): 3 мин быстро («тяжело разговаривать») + 3 мин спокойно, 5 циклов = 30 минут, 4–5 раз в неделю. Эффекты в исследованиях: +10% выносливости, снижение давления и сахара, −20% риска возрастных заболеваний."},
  en:{appTitle:"Japanese Walking",subtitle:"Interval Walking Training (IWT) — Shinshu University method",
   start:"Start workout",fastPhase:"FAST",slowPhase:"EASY",finished:"Workout complete!",
@@ -179,11 +193,14 @@ const I18N = {
   hrHint:"Enable heart-rate broadcast on your watch (Broadcast HR)",
   smartMode:"Smart mode — auto pace by heart rate",age:"Age",targetZone:"Target zones",
   smartHint:"The app speeds up or slows down the metronome to keep your HR in zone: fast 70–80% of max, easy 50–65%. Requires a connected watch.",
+  voice:"Voice cues",weight:"Weight (for calories)",kg:"kg",
+  sayFast:"Speed up!",saySlow:"Easy pace",sayDone:"Workout complete. Great job!",
+  streak:"Day streak",totalWorkouts:"Total workouts",stepsU:"steps",kcalU:"kcal",minU:"min",
   aboutText:"Developed by Prof. Hiroshi Nose and Shizue Masuki (Shinshu University): 3 min fast (hard to talk) + 3 min easy, 5 cycles = 30 min, 4–5×/week. Studies: +10% aerobic capacity, lower blood pressure and glucose, −20% lifestyle-disease risk."}
 };
 
 /* ---------- settings ---------- */
-const DEF={fastBpm:135,slowBpm:100,phaseMin:3,cycles:5,metroOn:true,vibOn:true,sndOn:true,vol:80,lang:"ru",smartOn:false,age:40};
+const DEF={fastBpm:135,slowBpm:100,phaseMin:3,cycles:5,metroOn:true,vibOn:true,sndOn:true,vol:80,lang:"ru",smartOn:false,age:40,voiceOn:true,weight:75};
 let cfg;
 try{cfg=Object.assign({},DEF,JSON.parse(localStorage.getItem("jw")||"{}"));}catch(e){cfg=Object.assign({},DEF);}
 const save=()=>{try{localStorage.setItem("jw",JSON.stringify(cfg));}catch(e){}};
@@ -211,15 +228,49 @@ function syncHome(){
   const zf=zone("fast"),zs=zone("slow");
   $("zoneVal").textContent="🔥 "+zf[0]+"–"+zf[1]+" · 🌿 "+zs[0]+"–"+zs[1];
   $("smartSet").style.display=cfg.smartOn?"block":"none";
+  $("voiceOn").checked=cfg.voiceOn;
+  $("weight").value=cfg.weight; $("weightVal").textContent=cfg.weight+" "+t("kg");
+  renderHist();
+}
+/* ---------- история тренировок ---------- */
+const hist={
+  load(){try{return JSON.parse(localStorage.getItem("jwHist")||"[]")}catch(e){return[]}},
+  add(r){const h=this.load();h.unshift(r);
+    try{localStorage.setItem("jwHist",JSON.stringify(h.slice(0,300)))}catch(e){}},
+  key(ts){const d=new Date(ts);
+    return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")},
+  streak(){const days=new Set(this.load().map(r=>r.d));
+    const day=86400000;let cur=new Date();cur.setHours(0,0,0,0);cur=cur.getTime();
+    let n=0;
+    if(!days.has(this.key(cur)))cur-=day; // серия не рвётся, если сегодня ещё не ходили
+    while(days.has(this.key(cur))){n++;cur-=day;}
+    return n;}
+};
+function renderHist(){
+  const h=hist.load();
+  $("histCard").style.display=h.length?"block":"none";
+  if(!h.length)return;
+  $("streakVal").textContent=hist.streak();
+  $("twVal").textContent=h.length;
+  $("histList").innerHTML=h.slice(0,7).map(r=>
+    '<div class="row" style="font-size:13px;color:var(--dim)"><span>'+r.d+'</span><span>'+
+    r.min+" "+t("minU")+" · "+r.st+" 👟 · "+r.kc+" "+t("kcalU")+"</span></div>").join("");
+}
+/* голос */
+function say(key){
+  if(!cfg.voiceOn||!window.speechSynthesis)return;
+  const u=new SpeechSynthesisUtterance(t(key));
+  u.lang=cfg.lang==="ru"?"ru-RU":"en-US";u.rate=1.05;
+  speechSynthesis.cancel();speechSynthesis.speak(u);
 }
 /* HR-зоны: максимум по Танаке (208 − 0.7×возраст) */
 const hrMax=()=>Math.round(208-0.7*cfg.age);
 const zone=ph=>ph==="fast"
   ?[Math.round(hrMax()*0.70),Math.round(hrMax()*0.80)]
   :[Math.round(hrMax()*0.50),Math.round(hrMax()*0.65)];
-["fastBpm","slowBpm","phaseMin","cycles","vol","age"].forEach(id=>
+["fastBpm","slowBpm","phaseMin","cycles","vol","age","weight"].forEach(id=>
   $(id).addEventListener("input",e=>{cfg[id]=+e.target.value;save();syncHome();}));
-["metroOn","vibOn","sndOn","smartOn"].forEach(id=>
+["metroOn","vibOn","sndOn","smartOn","voiceOn"].forEach(id=>
   $(id).addEventListener("change",e=>{cfg[id]=e.target.checked;save();syncHome();}));
 document.querySelectorAll("#langSeg button").forEach(b=>
   b.addEventListener("click",()=>{cfg.lang=b.dataset.lang;save();applyI18n();}));
@@ -268,6 +319,7 @@ async function wakeLock(){try{S.lock=await navigator.wakeLock?.request("screen")
 document.addEventListener("visibilitychange",()=>{if(S.running&&document.visibilityState==="visible")wakeLock();});
 
 function announce(){
+  say(S.phase==="fast"?"sayFast":"saySlow");
   if(cfg.sndOn)melody(SND[S.phase]);
   if(cfg.vibOn&&navigator.vibrate)
     navigator.vibrate(S.phase==="fast"?[250,120,250,120,250]:[700]);
@@ -275,7 +327,8 @@ function announce(){
 
 function startSession(){
   audio().resume();
-  Object.assign(S,{running:true,paused:false,phase:"fast",cycle:0,elapsed:0,last:performance.now()});
+  Object.assign(S,{running:true,paused:false,phase:"fast",cycle:0,elapsed:0,
+    last:performance.now(),steps:0,kcal:0,actMs:0,lastCnt:0,lastAdj:0});
   show("session");wakeLock();
   if(cfg.metroOn)metro.start(curBpm());
   announce();render();
@@ -283,7 +336,16 @@ function startSession(){
 }
 function tick(){
   if(!S.running||S.paused)return;
-  const now=performance.now();S.elapsed+=now-S.last;S.last=now;
+  const now=performance.now(),dt=now-S.last;
+  S.elapsed+=dt;S.last=now;S.actMs+=dt;
+  /* метрики: шаги из каденса, ккал из MET (быстро 5.0 / спокойно 3.0) */
+  S.steps+=dt/60000*curBpm();
+  S.kcal+=dt/60000*(S.phase==="fast"?5.0:3.0)*3.5*cfg.weight/200;
+  /* отсчёт 3-2-1 перед сменой фазы */
+  const remainS=Math.ceil((phaseMs()-S.elapsed)/1000);
+  if(cfg.sndOn&&remainS<=3&&remainS>=1&&remainS!==S.lastCnt){
+    S.lastCnt=remainS;blip(audio().currentTime,1320,cfg.vol/100*0.5,0.07);
+  }
   if(S.elapsed>=phaseMs())nextPhase();
   /* умный режим: первые 45 с фазы пульс «догоняет», потом каждые 15 с
      сверяем с зоной и двигаем темп на ±2 шаг/мин */
@@ -296,7 +358,7 @@ function tick(){
   render();
 }
 function nextPhase(){
-  S.elapsed=0;
+  S.elapsed=0;S.lastCnt=0;
   if(S.phase==="fast"){S.phase="slow";}
   else{S.phase="fast";S.cycle++;
     if(S.cycle>=cfg.cycles){finish(true);return;}}
@@ -319,13 +381,24 @@ function render(){
   $("bpmVal").textContent=curBpm();
   $("pauseBtn").textContent=t(S.paused?"resume":"pause");
   $("zoneLive").textContent=(cfg.smartOn&&hrDev)?t("targetZone")+" ♥ "+zone(S.phase).join("–"):"";
+  $("statsLive").textContent=Math.round(S.steps)+" 👟 · "+Math.round(S.kcal)+" "+t("kcalU");
 }
 function finish(fanfare){
   S.running=false;clearInterval(S.ui);metro.stop();
   S.lock?.release().catch(()=>{});S.lock=null;
+  /* сохраняем тренировку длиннее минуты в историю */
+  if(S.actMs>60000){
+    hist.add({d:hist.key(Date.now()),min:Math.round(S.actMs/60000),
+      st:Math.round(S.steps),kc:Math.round(S.kcal)});
+    renderHist();
+  }
   if(fanfare){
+    say("sayDone");
     if(cfg.sndOn)melody(SND.finish);
     if(cfg.vibOn&&navigator.vibrate)navigator.vibrate([300,150,300,150,600]);
+    $("finStats").textContent=Math.round(S.actMs/60000)+" "+t("minU")+" · "+
+      Math.round(S.steps)+" 👟 · "+Math.round(S.kcal)+" "+t("kcalU")+" · "+
+      (S.steps*0.7/1000).toFixed(1)+" km";
     show("finished");
   } else show("home");
 }
