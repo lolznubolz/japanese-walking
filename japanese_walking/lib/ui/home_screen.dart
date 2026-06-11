@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/strings.dart';
 import '../models/app_settings.dart';
+import '../models/workout_history.dart';
 import '../services/heart_rate_service.dart';
 import '../theme.dart';
 import 'session_screen.dart';
@@ -22,7 +23,8 @@ class HomeScreen extends StatelessWidget {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Column(
+          child: SingleChildScrollView(
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -104,7 +106,66 @@ class HomeScreen extends StatelessWidget {
                     : const SizedBox.shrink(),
               ),
 
-              const Spacer(),
+              // History & streak
+              FutureBuilder<List<WorkoutRecord>>(
+                future: WorkoutHistory.load(),
+                builder: (context, snap) {
+                  final h = snap.data ?? [];
+                  if (h.isEmpty) return const SizedBox.shrink();
+                  return Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('🔥 ${s['streak']}'),
+                              Text('${WorkoutHistory.streak(h)}',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w700)),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(s['totalWorkouts']),
+                              Text('${h.length}',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w700)),
+                            ],
+                          ),
+                          const Divider(height: 20),
+                          for (final r in h.take(5))
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 2),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(r.day,
+                                      style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.white
+                                              .withValues(alpha: 0.55))),
+                                  Text(
+                                      '${r.minutes} ${s['minU']} · ${r.steps} 👟 · ${r.kcal} ${s['kcalU']}',
+                                      style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.white
+                                              .withValues(alpha: 0.55))),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
 
               // About
               Text(s['aboutMethod'],
@@ -133,6 +194,7 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
             ],
+            ),
           ),
         ),
       ),

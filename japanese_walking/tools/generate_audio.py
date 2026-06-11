@@ -60,6 +60,9 @@ def silence(dur):
 save("tick.wav", tone(1800, 0.05, vol=0.7, decay=0.04))
 save("tock.wav", tone(1400, 0.05, vol=0.6, decay=0.04))
 
+# Countdown blip (3-2-1 before each phase change)
+save("count.wav", tone(1320, 0.07, vol=0.6, decay=0.06))
+
 # Phase -> FAST: rising three-note motif (energetic)
 save(
     "phase_fast.wav",

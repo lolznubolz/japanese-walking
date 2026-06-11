@@ -24,7 +24,7 @@ class _SessionScreenState extends State<SessionScreen> {
   @override
   void initState() {
     super.initState();
-    c = SessionController(widget.settings);
+    c = SessionController(widget.settings, hr: widget.hr);
     c.start();
   }
 
@@ -50,7 +50,7 @@ class _SessionScreenState extends State<SessionScreen> {
           listenable: c,
           builder: (context, _) {
             if (c.state == SessionState.finished) {
-              return _FinishedView(s: s);
+              return _FinishedView(s: s, c: c);
             }
             final isFast = c.phase == Phase.fast;
             final color = isFast ? AppTheme.fastColor : AppTheme.slowColor;
@@ -74,6 +74,12 @@ class _SessionScreenState extends State<SessionScreen> {
                     '${s['cycle']} ${c.cycleIndex + 1} ${s['of']} ${widget.settings.cycles}',
                     style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.6)),
+                  ),
+                  Text(
+                    '${c.steps.round()} 👟 · ${c.kcal.round()} ${s['kcalU']}',
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.white.withValues(alpha: 0.45)),
                   ),
                   const Spacer(),
 
@@ -120,15 +126,28 @@ class _SessionScreenState extends State<SessionScreen> {
                               ListenableBuilder(
                                 listenable: widget.hr,
                                 builder: (context, _) => widget.hr.connected
-                                    ? Row(
+                                    ? Column(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          const Icon(Icons.favorite,
-                                              size: 16,
-                                              color: AppTheme.fastColor),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                              '${widget.hr.bpm ?? '—'} ${s['bpm']}'),
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(Icons.favorite,
+                                                  size: 16,
+                                                  color: AppTheme.fastColor),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                  '${widget.hr.bpm ?? '—'} ${s['bpm']}'),
+                                            ],
+                                          ),
+                                          if (widget.settings.smartMode)
+                                            Text(
+                                              '${s['targetZone']} ${c.currentZone.$1}–${c.currentZone.$2}',
+                                              style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: Colors.white
+                                                      .withValues(alpha: 0.45)),
+                                            ),
                                         ],
                                       )
                                     : const SizedBox.shrink(),
@@ -229,8 +248,9 @@ class _SessionScreenState extends State<SessionScreen> {
 }
 
 class _FinishedView extends StatelessWidget {
-  const _FinishedView({required this.s});
+  const _FinishedView({required this.s, required this.c});
   final S s;
+  final SessionController c;
 
   @override
   Widget build(BuildContext context) {
@@ -245,6 +265,13 @@ class _FinishedView extends StatelessWidget {
             const SizedBox(height: 24),
             Text(s['finished'],
                 style: Theme.of(context).textTheme.headlineMedium),
+            const SizedBox(height: 8),
+            Text(
+              '${c.activeMinutes} ${s['minU']} · ${c.steps.round()} 👟 · '
+              '${c.kcal.round()} ${s['kcalU']} · '
+              '${(c.steps * 0.7 / 1000).toStringAsFixed(1)} km',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+            ),
             const SizedBox(height: 8),
             Text(s['sessionSummary'],
                 textAlign: TextAlign.center,

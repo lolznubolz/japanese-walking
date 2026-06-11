@@ -91,6 +91,51 @@ class SettingsScreen extends StatelessWidget {
                 value: settings.phaseSoundsEnabled,
                 onChanged: (v) => settings.phaseSoundsEnabled = v,
               ),
+              SwitchListTile(
+                title: Text(s['voice']),
+                value: settings.voiceEnabled,
+                onChanged: (v) => settings.voiceEnabled = v,
+              ),
+              _SliderTile(
+                title: s['weight'],
+                value: settings.weightKg.toDouble(),
+                min: 40,
+                max: 150,
+                label: '${settings.weightKg} ${s['kg']}',
+                onChanged: (v) => settings.weightKg = v.round(),
+              ),
+
+              const Divider(height: 32),
+
+              // --- Smart mode ---
+              SwitchListTile(
+                title: Text(s['smartMode']),
+                subtitle: Text(s['smartHint'],
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white.withValues(alpha: 0.5))),
+                value: settings.smartMode,
+                onChanged: (v) => settings.smartMode = v,
+              ),
+              if (settings.smartMode) ...[
+                _SliderTile(
+                  title: s['age'],
+                  value: settings.age.toDouble(),
+                  min: 14,
+                  max: 90,
+                  label: '${settings.age}',
+                  onChanged: (v) => settings.age = v.round(),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    '${s['targetZone']}: 🔥 ${settings.hrZone(fast: true).$1}–${settings.hrZone(fast: true).$2} · '
+                    '🌿 ${settings.hrZone(fast: false).$1}–${settings.hrZone(fast: false).$2}',
+                    style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.6)),
+                  ),
+                ),
+              ],
 
               const Divider(height: 32),
 

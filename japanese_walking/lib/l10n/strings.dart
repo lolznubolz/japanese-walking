@@ -48,6 +48,23 @@ class S {
     'sessionSummary': 'Отличная работа! Сделайте лёгкую растяжку.',
     'done': 'Готово',
     'btUnavailable': 'Bluetooth недоступен на этом устройстве',
+    'voice': 'Голосовые подсказки',
+    'weight': 'Вес (для калорий)',
+    'kg': 'кг',
+    'age': 'Возраст',
+    'smartMode': 'Умный режим — авто-темп по пульсу',
+    'smartHint':
+        'Приложение само ускоряет или замедляет метроном, чтобы пульс держался в зоне: быстро 70–80% от максимума, спокойно 50–65%. Нужны подключённые часы.',
+    'targetZone': 'Целевые зоны',
+    'streak': 'Серия дней',
+    'totalWorkouts': 'Всего тренировок',
+    'history': 'История',
+    'sayFast': 'Ускорьтесь!',
+    'saySlow': 'Спокойный темп',
+    'sayDone': 'Тренировка завершена. Отличная работа!',
+    'stepsU': 'шагов',
+    'kcalU': 'ккал',
+    'minU': 'мин',
   };
 
   static const _en = {
@@ -91,5 +108,22 @@ class S {
     'sessionSummary': 'Great job! Do some light stretching.',
     'done': 'Done',
     'btUnavailable': 'Bluetooth is unavailable on this device',
+    'voice': 'Voice cues',
+    'weight': 'Weight (for calories)',
+    'kg': 'kg',
+    'age': 'Age',
+    'smartMode': 'Smart mode — auto pace by heart rate',
+    'smartHint':
+        'The app speeds up or slows down the metronome to keep your HR in zone: fast 70–80% of max, easy 50–65%. Requires a connected watch.',
+    'targetZone': 'Target zones',
+    'streak': 'Day streak',
+    'totalWorkouts': 'Total workouts',
+    'history': 'History',
+    'sayFast': 'Speed up!',
+    'saySlow': 'Easy pace',
+    'sayDone': 'Workout complete. Great job!',
+    'stepsU': 'steps',
+    'kcalU': 'kcal',
+    'minU': 'min',
   };
 }

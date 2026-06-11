@@ -2,10 +2,14 @@ import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:vibration/vibration.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import '../l10n/strings.dart';
 import '../models/app_settings.dart';
+import '../models/workout_history.dart';
+import 'heart_rate_service.dart';
 import 'metronome.dart';
 
 enum SessionState { idle, running, paused, finished }
@@ -13,20 +17,32 @@ enum SessionState { idle, running, paused, finished }
 enum Phase { fast, slow }
 
 /// State machine for one IWT session:
-/// fast → slow → fast → … (cycles × 2 phases), with metronome, phase-change
-/// sounds and distinct vibration patterns.
+/// fast → slow → fast → … (cycles × 2 phases), with metronome, voice cues,
+/// 3-2-1 countdown, phase-change sounds/vibration, live steps/kcal metrics
+/// and an optional smart mode that keeps heart rate in the target zone.
 class SessionController extends ChangeNotifier {
-  SessionController(this.settings);
+  SessionController(this.settings, {this.hr});
 
   final AppSettings settings;
+  final HeartRateService? hr;
   final Metronome metronome = Metronome();
   final AudioPlayer _fx = AudioPlayer();
+  final AudioPlayer _count = AudioPlayer();
+  final FlutterTts _tts = FlutterTts();
 
   SessionState state = SessionState.idle;
   Phase phase = Phase.fast;
   int cycleIndex = 0; // 0-based
 
+  // Live metrics (estimated from cadence + body weight, MET 5.0 / 3.0)
+  double steps = 0;
+  double kcal = 0;
+
   final Stopwatch _phaseClock = Stopwatch();
+  final Stopwatch _sessionClock = Stopwatch();
+  int _lastMetricMs = 0;
+  int _lastCountSec = 0;
+  int _lastAdjustMs = 0;
   Timer? _ui;
   bool? _hasVibrator;
 
@@ -49,14 +65,26 @@ class SessionController extends ChangeNotifier {
   int get currentBpm =>
       phase == Phase.fast ? settings.fastBpm : settings.slowBpm;
 
+  (int, int) get currentZone => settings.hrZone(fast: phase == Phase.fast);
+
   // --- Lifecycle ---
   Future<void> start() async {
     await metronome.init();
     _hasVibrator ??= await Vibration.hasVibrator();
+    await _tts.setLanguage(settings.localeCode == 'ru' ? 'ru-RU' : 'en-US');
+    await _tts.setSpeechRate(0.5);
     cycleIndex = 0;
     phase = Phase.fast;
+    steps = 0;
+    kcal = 0;
+    _lastMetricMs = 0;
+    _lastCountSec = 0;
+    _lastAdjustMs = 0;
     state = SessionState.running;
     _phaseClock
+      ..reset()
+      ..start();
+    _sessionClock
       ..reset()
       ..start();
     if (settings.metronomeEnabled) {
@@ -74,6 +102,7 @@ class SessionController extends ChangeNotifier {
     if (state != SessionState.running) return;
     state = SessionState.paused;
     _phaseClock.stop();
+    _sessionClock.stop();
     metronome.stop();
     _ui?.cancel();
     notifyListeners();
@@ -83,6 +112,7 @@ class SessionController extends ChangeNotifier {
     if (state != SessionState.paused) return;
     state = SessionState.running;
     _phaseClock.start();
+    _sessionClock.start();
     if (settings.metronomeEnabled) metronome.start(currentBpm);
     _startUiTimer();
     notifyListeners();
@@ -90,7 +120,7 @@ class SessionController extends ChangeNotifier {
 
   void stopSession() => _finish(playFanfare: false);
 
-  /// Live cadence tweak from the session screen (persists to settings).
+  /// Cadence tweak — manual (±) or from smart mode. Persists to settings.
   void adjustBpm(int delta) {
     if (phase == Phase.fast) {
       settings.fastBpm = settings.fastBpm + delta;
@@ -108,6 +138,41 @@ class SessionController extends ChangeNotifier {
 
   void _tick() {
     if (state != SessionState.running) return;
+
+    // Metrics: integrate cadence over elapsed time.
+    final ms = _sessionClock.elapsedMilliseconds;
+    final dtMin = (ms - _lastMetricMs) / 60000.0;
+    _lastMetricMs = ms;
+    final met = phase == Phase.fast ? 5.0 : 3.0;
+    steps += dtMin * currentBpm;
+    kcal += dtMin * met * 3.5 * settings.weightKg / 200.0;
+
+    // 3-2-1 countdown before each phase change.
+    final remainSec = (phaseLength - phaseElapsed).inMilliseconds ~/ 1000 + 1;
+    if (settings.phaseSoundsEnabled &&
+        remainSec <= 3 &&
+        remainSec >= 1 &&
+        remainSec != _lastCountSec) {
+      _lastCountSec = remainSec;
+      _count.play(AssetSource('audio/count.wav'));
+    }
+
+    // Smart mode: after 45 s of the phase, every 15 s nudge cadence ±2
+    // to keep HR inside the target zone.
+    final bpmNow = hr?.bpm;
+    if (settings.smartMode &&
+        bpmNow != null &&
+        phaseElapsed.inMilliseconds > 45000 &&
+        ms - _lastAdjustMs > 15000) {
+      final (lo, hi) = currentZone;
+      if (bpmNow < lo - 2) {
+        adjustBpm(2);
+      } else if (bpmNow > hi + 2) {
+        adjustBpm(-2);
+      }
+      _lastAdjustMs = ms;
+    }
+
     if (_phaseClock.elapsed >= phaseLength) {
       _nextPhase();
     }
@@ -115,6 +180,7 @@ class SessionController extends ChangeNotifier {
   }
 
   void _nextPhase() {
+    _lastCountSec = 0;
     if (phase == Phase.fast) {
       phase = Phase.slow;
     } else {
@@ -132,8 +198,15 @@ class SessionController extends ChangeNotifier {
     _announcePhase();
   }
 
-  /// Phase-change feedback: a distinct sound per direction + vibration.
+  void _say(String key) {
+    if (!settings.voiceEnabled) return;
+    _tts.stop();
+    _tts.speak(S.of(settings.localeCode)[key]);
+  }
+
+  /// Phase-change feedback: voice + a distinct sound per direction + vibration.
   void _announcePhase() {
+    _say(phase == Phase.fast ? 'sayFast' : 'saySlow');
     if (settings.phaseSoundsEnabled) {
       _fx.play(AssetSource(
         phase == Phase.fast ? 'audio/phase_fast.wav' : 'audio/phase_slow.wav',
@@ -153,10 +226,21 @@ class SessionController extends ChangeNotifier {
   void _finish({required bool playFanfare}) {
     state = SessionState.finished;
     _phaseClock.stop();
+    _sessionClock.stop();
     metronome.stop();
     _ui?.cancel();
     WakelockPlus.disable();
+    // Save workouts longer than a minute to the journal.
+    if (_sessionClock.elapsedMilliseconds > 60000) {
+      WorkoutHistory.add(WorkoutRecord(
+        day: WorkoutHistory.dayKey(DateTime.now()),
+        minutes: (_sessionClock.elapsedMilliseconds / 60000).round(),
+        steps: steps.round(),
+        kcal: kcal.round(),
+      ));
+    }
     if (playFanfare) {
+      _say('sayDone');
       if (settings.phaseSoundsEnabled) {
         _fx.play(AssetSource('audio/finish.wav'));
       }
@@ -167,11 +251,15 @@ class SessionController extends ChangeNotifier {
     notifyListeners();
   }
 
+  int get activeMinutes => (_sessionClock.elapsedMilliseconds / 60000).round();
+
   @override
   void dispose() {
     _ui?.cancel();
     metronome.dispose();
     _fx.dispose();
+    _count.dispose();
+    _tts.stop();
     WakelockPlus.disable();
     super.dispose();
   }

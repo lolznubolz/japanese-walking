@@ -44,6 +44,28 @@ class AppSettings extends ChangeNotifier {
     notifyListeners();
   }
 
+  // --- Voice cues, smart mode, body metrics ---
+  bool get voiceEnabled => _prefs.getBool('voiceEnabled') ?? true;
+  set voiceEnabled(bool v) => _set('voiceEnabled', v);
+
+  /// Auto-adjust cadence to keep HR in zone (needs a connected HR monitor).
+  bool get smartMode => _prefs.getBool('smartMode') ?? false;
+  set smartMode(bool v) => _set('smartMode', v);
+
+  int get age => _prefs.getInt('age') ?? 40;
+  set age(int v) => _set('age', v.clamp(14, 90));
+
+  int get weightKg => _prefs.getInt('weightKg') ?? 75;
+  set weightKg(int v) => _set('weightKg', v.clamp(40, 150));
+
+  /// Tanaka formula.
+  int get hrMax => (208 - 0.7 * age).round();
+
+  /// (lo, hi) target HR for a phase: fast 70–80%, slow 50–65% of max.
+  (int, int) hrZone({required bool fast}) => fast
+      ? ((hrMax * 0.70).round(), (hrMax * 0.80).round())
+      : ((hrMax * 0.50).round(), (hrMax * 0.65).round());
+
   // --- Locale: 'ru' | 'en' ---
   String get localeCode => _prefs.getString('localeCode') ?? 'ru';
   set localeCode(String v) {
