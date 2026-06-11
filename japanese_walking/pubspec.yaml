@@ -13,7 +13,7 @@ dependencies:
   # Audio: low-latency ticks for the metronome
   audioplayers: ^6.1.0
   # Strong, patterned vibration (Android) + basic haptics fallback (iOS)
-  vibration: ^2.0.0
+  vibration: ^3.1.0
   # Keep the screen awake during a session
   wakelock_plus: ^1.2.8
   # Persist user settings (pace, cycles, sound choice, language)
