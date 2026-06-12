@@ -76,8 +76,9 @@ class HomeScreen extends StatelessWidget {
                               '${settings.phaseSeconds ~/ 60} ${s['minutes']} · ${settings.slowBpm} ${s['stepsPerMin']}',
                         ),
                         const Divider(height: 28),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        Wrap(
+                          spacing: 16,
+                          runSpacing: 4,
                           children: [
                             Text('${s['cyclesCount']}: ${settings.cycles}'),
                             Text('${s['totalTime']}: $total ${s['minutes']}'),
@@ -192,9 +193,10 @@ class _DashboardSection extends StatelessWidget {
             child: Column(
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(s['weeklyGoal']),
+                    Expanded(child: Text(s['weeklyGoal'])),
+                    const SizedBox(width: 10),
                     Text(
                       '${fm.round()} / $goal ${s['minU']}${fm >= goal ? ' ✅' : ''}',
                       style: const TextStyle(fontWeight: FontWeight.w700),
@@ -318,21 +320,25 @@ class _DashboardSection extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 2),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(r.day,
                               style: TextStyle(
                                   fontSize: 13,
                                   color: Colors.white
                                       .withValues(alpha: 0.55))),
-                          Text(
-                            '${r.minutes} ${s['minU']} · ${r.steps} 👟 · ${r.kcal} ${s['kcalU']}'
-                            '${r.avgHr > 0 ? ' · ♥${r.avgHr}' : ''}'
-                            '${r.recovery > 0 ? ' ↓${r.recovery}' : ''}',
-                            style: TextStyle(
-                                fontSize: 13,
-                                color:
-                                    Colors.white.withValues(alpha: 0.55)),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              '${r.minutes} ${s['minU']} · ${r.steps} 👟 · ${r.kcal} ${s['kcalU']}'
+                              '${r.avgHr > 0 ? ' · ♥${r.avgHr}' : ''}'
+                              '${r.recovery > 0 ? ' ↓${r.recovery}' : ''}',
+                              textAlign: TextAlign.end,
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color:
+                                      Colors.white.withValues(alpha: 0.55)),
+                            ),
                           ),
                         ],
                       ),
@@ -357,16 +363,22 @@ class _ProtocolRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
         ),
         const SizedBox(width: 12),
         Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-        const Spacer(),
-        Text(value),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(value, textAlign: TextAlign.end, softWrap: true),
+        ),
       ],
     );
   }
