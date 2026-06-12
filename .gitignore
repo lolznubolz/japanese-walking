@@ -2,6 +2,8 @@
 id_ed25519
 id_ed25519*
 *.pem
+*.jks
+store_keys/
 
 # Flutter/build artifacts (generated in CI)
 japanese_walking/build/

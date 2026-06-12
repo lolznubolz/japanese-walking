@@ -25,7 +25,7 @@ jobs:
 
       - name: Scaffold Android platform folder
         working-directory: japanese_walking
-        run: flutter create . --platforms=android --org cc.lolznubolz --project-name japanese_walking
+        run: flutter create . --platforms=android --org app.walkbeat --project-name japanese_walking
 
       - name: Generate audio assets
         working-directory: japanese_walking
@@ -41,13 +41,34 @@ jobs:
           flutter pub get
           flutter build apk --release
 
-      - name: Rename APK
-        run: cp japanese_walking/build/app/outputs/flutter-apk/app-release.apk yaponskaya-hodba.apk
+      - name: Build AAB for Google Play
+        working-directory: japanese_walking
+        run: flutter build appbundle --release
+
+      - name: Sign AAB with upload key
+        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+        env:
+          KS: ${{ secrets.KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          echo "$KS" | base64 -d > /tmp/upload.jks
+          AAB=japanese_walking/build/app/outputs/bundle/release/app-release.aab
+          zip -d "$AAB" "META-INF/*" || true
+          jarsigner -keystore /tmp/upload.jks -storepass "$KS_PASS" "$AAB" "$KS_ALIAS"
+          jarsigner -verify "$AAB"
+
+      - name: Rename artifacts
+        run: |
+          cp japanese_walking/build/app/outputs/flutter-apk/app-release.apk yaponskaya-hodba.apk
+          cp japanese_walking/build/app/outputs/bundle/release/app-release.aab walkbeat-playstore.aab
 
       - name: Publish to release "latest"
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
-          name: "Японская ходьба — последняя сборка"
-          body: "APK собирается автоматически из main. Скачайте и установите (разрешите установку из неизвестных источников)."
-          files: yaponskaya-hodba.apk
+          name: "WalkBeat — последняя сборка"
+          body: "APK — для прямой установки (разрешите установку из неизвестных источников). AAB — для загрузки в Google Play Console."
+          files: |
+            yaponskaya-hodba.apk
+            walkbeat-playstore.aab
