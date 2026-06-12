@@ -179,13 +179,19 @@ class SessionController extends ChangeNotifier {
         _recoveries.add(_hrFastEnd - liveHr);
         _recDone = true;
       }
-      // Voice coach: out of zone for >2 minutes straight.
-      if (settings.smartMode && settings.voiceEnabled) {
+      // Coach: out of zone for >2 minutes straight — chime (or voice if on).
+      if (settings.smartMode) {
         final (lo, hi) = currentZone;
         if (liveHr < lo - 2 || liveHr > hi + 2) {
           _outZoneMs += dtMin * 60000;
           if (_outZoneMs > 120000 && !_coachSaid) {
-            _say(liveHr < lo ? 'coachUp' : 'coachDown');
+            final up = liveHr < lo;
+            if (settings.voiceEnabled) {
+              _say(up ? 'coachUp' : 'coachDown');
+            } else if (settings.phaseSoundsEnabled) {
+              _fx.play(AssetSource(
+                  up ? 'audio/coach_up.wav' : 'audio/coach_down.wav'));
+            }
             _coachSaid = true;
           }
         } else {

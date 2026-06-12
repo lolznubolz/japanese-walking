@@ -56,36 +56,45 @@ def silence(dur):
     return [0.0] * int(SR * dur)
 
 
-# Metronome ticks: short woodblock-like clicks, two pitches (left/right foot)
-save("tick.wav", tone(1800, 0.05, vol=0.7, decay=0.04))
-save("tock.wav", tone(1400, 0.05, vol=0.6, decay=0.04))
+def bell(freq, dur, vol=0.5):
+    """Soft chime: fundamental + overtones with a long, gentle decay."""
+    return mix(
+        tone(freq, dur, vol, attack=0.012, decay=dur),
+        tone(freq * 2, dur, vol * 0.35, attack=0.012, decay=dur),
+        tone(freq * 3, dur, vol * 0.12, attack=0.012, decay=dur),
+    )
+
+
+def chime(notes, vol=0.5):
+    """Overlapping bells: each next note starts at 55% of the previous one."""
+    out = []
+    for f, d in notes:
+        b = bell(f, d, vol)
+        start = max(0, len(out) - int(SR * d * 0.45)) if out else 0
+        # extend buffer and mix
+        need = start + len(b)
+        out += [0.0] * max(0, need - len(out))
+        for i, s in enumerate(b):
+            out[start + i] += s
+    return out
+
+
+# Metronome: ONE crisp tick per step (single pitch, sharp envelope)
+save("tick.wav", tone(1700, 0.035, vol=0.75, attack=0.001, decay=0.03))
+save("tock.wav", tone(1700, 0.035, vol=0.75, attack=0.001, decay=0.03))
 
 # Countdown blip (3-2-1 before each phase change)
-save("count.wav", tone(1320, 0.07, vol=0.6, decay=0.06))
+save("count.wav", tone(1320, 0.07, vol=0.55, decay=0.06))
 
-# Phase -> FAST: rising three-note motif (energetic)
-save(
-    "phase_fast.wav",
-    concat(
-        tone(660, 0.14, 0.7), silence(0.04),
-        tone(880, 0.14, 0.7), silence(0.04),
-        tone(1320, 0.3, 0.8, decay=0.25),
-    ),
-)
+# Phase -> FAST: rising fifth, soft bells ("up we go")
+save("phase_fast.wav", chime([(523, 0.5), (784, 0.9)]))
 
-# Phase -> SLOW: falling two-note motif (calming)
-save(
-    "phase_slow.wav",
-    concat(tone(880, 0.2, 0.7), silence(0.06), tone(587, 0.45, 0.7, decay=0.4)),
-)
+# Phase -> SLOW: falling fifth ("settle down")
+save("phase_slow.wav", chime([(784, 0.5), (523, 1.0)]))
 
-# Finish: small fanfare (C–E–G–C arpeggio)
-save(
-    "finish.wav",
-    concat(
-        tone(523, 0.16, 0.7),
-        tone(659, 0.16, 0.7),
-        tone(784, 0.16, 0.7),
-        mix(tone(1046, 0.6, 0.6, decay=0.5), tone(523, 0.6, 0.3, decay=0.5)),
-    ),
-)
+# Finish: gentle C–E–G chime
+save("finish.wav", chime([(523, 0.4), (659, 0.4), (784, 1.2)]))
+
+# Coach: out-of-zone hints (rising = speed up, falling = slow down)
+save("coach_up.wav", chime([(659, 0.3), (880, 0.6)], vol=0.55))
+save("coach_down.wav", chime([(880, 0.3), (587, 0.7)], vol=0.55))

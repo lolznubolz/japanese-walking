@@ -45,7 +45,7 @@ class AppSettings extends ChangeNotifier {
   }
 
   // --- Voice cues, smart mode, body metrics ---
-  bool get voiceEnabled => _prefs.getBool('voiceEnabled') ?? true;
+  bool get voiceEnabled => _prefs.getBool('voiceEnabled') ?? false;
   set voiceEnabled(bool v) => _set('voiceEnabled', v);
 
   /// Auto-adjust cadence to keep HR in zone (needs a connected HR monitor).
