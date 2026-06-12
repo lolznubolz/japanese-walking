@@ -62,6 +62,39 @@
 <body>
 <div class="app">
 
+  <!-- ONBOARDING (first launch) -->
+  <div id="onb" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:50;overflow:auto">
+    <div class="app" style="margin:0 auto">
+      <h1 style="margin-top:30px">🚶 <span data-i="appTitle"></span></h1>
+      <div class="sub" data-i="onbText"></div>
+      <div class="seg" id="onbLang">
+        <button data-lang="ru" style="flex:1">Русский</button>
+        <button data-lang="en" style="flex:1">English</button>
+      </div>
+      <div class="card">
+        <div class="row"><label data-i="age"></label><span class="val" id="onbAgeVal"></span></div>
+        <input type="range" id="onbAge" min="14" max="90" step="1">
+        <div class="row"><label data-i="weight"></label><span class="val" id="onbWeightVal"></span></div>
+        <input type="range" id="onbWeight" min="40" max="150" step="1">
+        <div class="row"><label data-i="goalSetting"></label><span class="val" id="onbGoalVal"></span></div>
+        <input type="range" id="onbGoal" min="30" max="120" step="10">
+      </div>
+      <button id="onbGo" data-i="onbStart"></button>
+      <div class="about" data-i="aboutText"></div>
+    </div>
+  </div>
+
+  <!-- ZONE CALIBRATION TEST -->
+  <div id="calib" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:60">
+    <div class="app" style="text-align:center;padding-top:60px">
+      <h1>🎯 <span data-i="calib"></span></h1>
+      <p class="sub" data-i="calibRun"></p>
+      <div id="calibClock" style="font-size:64px;font-weight:700">03:00</div>
+      <div id="calibHr" style="color:var(--fast);font-size:22px;font-weight:700;margin:10px 0 30px">—</div>
+      <button class="danger" id="calibStop" data-i="stop"></button>
+    </div>
+  </div>
+
   <!-- HOME -->
   <div id="home">
     <h1 data-i="appTitle"></h1>
@@ -82,6 +115,8 @@
       <div class="row"><label data-i="cyclesCount"></label><span class="val" id="cycVal"></span></div>
       <input type="range" id="cycles" min="1" max="12" step="1">
       <div class="row"><label data-i="totalTime"></label><span class="val" id="totalVal"></span></div>
+      <div class="row"><label data-i="goalSetting"></label><span class="val" id="goalMinVal"></span></div>
+      <input type="range" id="goalMin" min="30" max="120" step="10">
     </div>
 
     <div class="card">
@@ -95,9 +130,31 @@
       <input type="range" id="weight" min="40" max="150" step="1">
     </div>
 
+    <!-- Weekly goal -->
+    <div class="card" id="goalCard">
+      <div class="row">
+        <label data-i="weeklyGoal"></label>
+        <span class="val" id="goalTxt"></span>
+      </div>
+      <div class="bar" style="margin-top:10px"><i id="goalBar" style="background:var(--fast)"></i></div>
+    </div>
+
+    <!-- Progression suggestion -->
+    <div class="card" id="progCard" style="display:none">
+      <div class="row">
+        <label id="progTxt" style="font-size:13px"></label>
+        <button class="ghost" id="progApply" style="width:auto;padding:8px 16px;font-size:14px" data-i="apply"></button>
+      </div>
+    </div>
+
     <div class="card" id="histCard" style="display:none">
       <div class="row"><label>🔥 <span data-i="streak"></span></label><span class="val" id="streakVal"></span></div>
       <div class="row"><label data-i="totalWorkouts"></label><span class="val" id="twVal"></span></div>
+      <div id="badges" style="margin-top:10px;font-size:13px;line-height:1.8"></div>
+      <div style="margin-top:10px">
+        <div class="note" style="text-align:left" data-i="chartT"></div>
+        <svg id="chart" width="100%" height="80" viewBox="0 0 320 80" preserveAspectRatio="none"></svg>
+      </div>
       <div id="histList" style="margin-top:10px"></div>
     </div>
 
@@ -107,6 +164,8 @@
         <div class="row"><label data-i="age"></label><span class="val" id="ageVal"></span></div>
         <input type="range" id="age" min="14" max="90" step="1">
         <div class="row"><label data-i="targetZone"></label><span class="val" id="zoneVal"></span></div>
+        <button class="ghost" id="calibBtn" style="margin-top:8px;font-size:15px;padding:12px">🎯 <span data-i="calib"></span></button>
+        <div class="note" id="calibNote" style="text-align:left"></div>
         <div class="note" style="text-align:left" data-i="smartHint"></div>
       </div>
     </div>
@@ -178,6 +237,13 @@ const I18N = {
   voice:"Голосовые подсказки",weight:"Вес (для калорий)",kg:"кг",
   sayFast:"Ускорьтесь!",saySlow:"Спокойный темп",sayDone:"Тренировка завершена. Отличная работа!",
   streak:"Серия дней",totalWorkouts:"Всего тренировок",stepsU:"шагов",kcalU:"ккал",minU:"мин",
+  onbText:"Метод университета Синсю: 3 минуты быстро + 3 минуты спокойно. Пара настроек — и в путь.",
+  onbStart:"Поехали!",goalSetting:"Цель: быстрых минут в неделю",weeklyGoal:"Быстрые минуты за неделю",
+  calib:"Тест зон (3 мин)",calibRun:"Шагайте максимально быстро 3 минуты — измеряю рабочий пульс",
+  calibDone:"Зоны откалиброваны по вашему пульсу: быстрая зона",calibNeedHr:"Сначала подключите часы",
+  apply:"Применить",chartT:"Быстрые минуты по неделям",
+  coachUp:"Пульс ниже зоны. Прибавьте шагу!",coachDown:"Пульс выше зоны. Сбавьте темп.",
+  progrW:"Неделя",progrR:"программы — рекомендуем",progrC:"циклов",recU:"восст. пульса",
   aboutText:"Метод проф. Хироси Носэ и Сидзуэ Масуки (Университет Синсю): 3 мин быстро («тяжело разговаривать») + 3 мин спокойно, 5 циклов = 30 минут, 4–5 раз в неделю. Эффекты в исследованиях: +10% выносливости, снижение давления и сахара, −20% риска возрастных заболеваний."},
  en:{appTitle:"Japanese Walking",subtitle:"Interval Walking Training (IWT) — Shinshu University method",
   start:"Start workout",fastPhase:"FAST",slowPhase:"EASY",finished:"Workout complete!",
@@ -196,11 +262,18 @@ const I18N = {
   voice:"Voice cues",weight:"Weight (for calories)",kg:"kg",
   sayFast:"Speed up!",saySlow:"Easy pace",sayDone:"Workout complete. Great job!",
   streak:"Day streak",totalWorkouts:"Total workouts",stepsU:"steps",kcalU:"kcal",minU:"min",
+  onbText:"The Shinshu University method: 3 minutes fast + 3 minutes easy. A couple of settings and off you go.",
+  onbStart:"Let's go!",goalSetting:"Goal: fast minutes per week",weeklyGoal:"Fast minutes this week",
+  calib:"Zone test (3 min)",calibRun:"Walk as fast as you can for 3 minutes — measuring your working HR",
+  calibDone:"Zones calibrated to your heart rate: fast zone",calibNeedHr:"Connect your watch first",
+  apply:"Apply",chartT:"Fast minutes by week",
+  coachUp:"Heart rate below zone. Pick up the pace!",coachDown:"Heart rate above zone. Slow down.",
+  progrW:"Week",progrR:"of the program — recommended",progrC:"cycles",recU:"HR recovery",
   aboutText:"Developed by Prof. Hiroshi Nose and Shizue Masuki (Shinshu University): 3 min fast (hard to talk) + 3 min easy, 5 cycles = 30 min, 4–5×/week. Studies: +10% aerobic capacity, lower blood pressure and glucose, −20% lifestyle-disease risk."}
 };
 
 /* ---------- settings ---------- */
-const DEF={fastBpm:135,slowBpm:100,phaseMin:3,cycles:5,metroOn:true,vibOn:true,sndOn:true,vol:80,lang:"ru",smartOn:false,age:40,voiceOn:true,weight:75};
+const DEF={fastBpm:135,slowBpm:100,phaseMin:3,cycles:5,metroOn:true,vibOn:true,sndOn:true,vol:80,lang:"ru",smartOn:false,age:40,voiceOn:true,weight:75,onboarded:false,goalMin:60,calibHr:0};
 let cfg;
 try{cfg=Object.assign({},DEF,JSON.parse(localStorage.getItem("jw")||"{}"));}catch(e){cfg=Object.assign({},DEF);}
 const save=()=>{try{localStorage.setItem("jw",JSON.stringify(cfg));}catch(e){}};
@@ -230,7 +303,11 @@ function syncHome(){
   $("smartSet").style.display=cfg.smartOn?"block":"none";
   $("voiceOn").checked=cfg.voiceOn;
   $("weight").value=cfg.weight; $("weightVal").textContent=cfg.weight+" "+t("kg");
-  renderHist();
+  $("goalMin").value=cfg.goalMin; $("goalMinVal").textContent=cfg.goalMin+" "+t("minU");
+  $("calibNote").textContent=cfg.calibHr
+    ? "✅ "+t("calibDone")+" "+(cfg.calibHr-8)+"–"+(cfg.calibHr+4)+" "+t("bpm")
+    : "";
+  renderHist();renderGoal();renderProg();
 }
 /* ---------- история тренировок ---------- */
 const hist={
@@ -252,9 +329,11 @@ function renderHist(){
   if(!h.length)return;
   $("streakVal").textContent=hist.streak();
   $("twVal").textContent=h.length;
+  renderBadges(h);renderChart(h);
   $("histList").innerHTML=h.slice(0,7).map(r=>
     '<div class="row" style="font-size:13px;color:var(--dim)"><span>'+r.d+'</span><span>'+
-    r.min+" "+t("minU")+" · "+r.st+" 👟 · "+r.kc+" "+t("kcalU")+"</span></div>").join("");
+    r.min+" "+t("minU")+" · "+r.st+" 👟 · "+r.kc+" "+t("kcalU")+
+    (r.hr?" · ♥"+r.hr:"")+(r.rec?" ↓"+r.rec:"")+"</span></div>").join("");
 }
 /* голос */
 function say(key){
@@ -263,12 +342,63 @@ function say(key){
   u.lang=cfg.lang==="ru"?"ru-RU":"en-US";u.rate=1.05;
   speechSynthesis.cancel();speechSynthesis.speak(u);
 }
-/* HR-зоны: максимум по Танаке (208 − 0.7×возраст) */
+/* HR-зоны: максимум по Танаке (208 − 0.7×возраст);
+   быстрая зона заменяется персональной после теста-калибровки */
 const hrMax=()=>Math.round(208-0.7*cfg.age);
 const zone=ph=>ph==="fast"
-  ?[Math.round(hrMax()*0.70),Math.round(hrMax()*0.80)]
+  ?(cfg.calibHr?[cfg.calibHr-8,cfg.calibHr+4]
+               :[Math.round(hrMax()*0.70),Math.round(hrMax()*0.80)])
   :[Math.round(hrMax()*0.50),Math.round(hrMax()*0.65)];
-["fastBpm","slowBpm","phaseMin","cycles","vol","age","weight"].forEach(id=>
+function fmtMs(ms){
+  const s=Math.ceil(ms/1000);
+  return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+}
+/* неделя (понедельник) для даты yyyy-mm-dd */
+function weekKey(dstr){
+  const d=new Date(dstr+"T12:00:00");
+  d.setDate(d.getDate()-(d.getDay()+6)%7);
+  return hist.key(d.getTime());
+}
+function renderGoal(){
+  const wk=weekKey(hist.key(Date.now()));
+  const fm=hist.load().filter(r=>weekKey(r.d)===wk).reduce((a,r)=>a+(r.fm||0),0);
+  $("goalTxt").textContent=Math.round(fm)+" / "+cfg.goalMin+" "+t("minU")+(fm>=cfg.goalMin?" ✅":"");
+  $("goalBar").style.width=Math.min(100,fm/cfg.goalMin*100)+"%";
+}
+function renderProg(){
+  const h=hist.load();
+  if(!h.length){$("progCard").style.display="none";return;}
+  const first=new Date(h[h.length-1].d+"T12:00:00");
+  const weekN=Math.floor((Date.now()-first.getTime())/(7*86400000))+1;
+  const rec=Math.min(5,1+weekN);
+  if(weekN<=5&&cfg.cycles<rec){
+    $("progCard").style.display="block";
+    $("progTxt").textContent="📈 "+t("progrW")+" "+weekN+" "+t("progrR")+" "+rec+" "+t("progrC");
+    $("progApply").onclick=()=>{cfg.cycles=rec;save();syncHome();};
+  } else $("progCard").style.display="none";
+}
+function renderBadges(h){
+  const km=h.reduce((a,r)=>a+r.st,0)*0.7/1000,s=hist.streak();
+  const B=[[h.length>=1,"🥇 1"],[h.length>=10,"🏅 10"],[h.length>=50,"💪 50"],
+           [s>=7,"🔥 7"],[s>=30,"🌟 30"],[km>=100,"🚶 100 km"]];
+  $("badges").innerHTML=B.filter(b=>b[0]).map(b=>
+    '<span style="background:rgba(255,255,255,.08);border-radius:12px;padding:4px 10px;margin-right:6px">'+b[1]+"</span>").join("");
+}
+function renderChart(h){
+  const m={};h.forEach(r=>{const k=weekKey(r.d);m[k]=(m[k]||0)+(r.fm||0);});
+  const now=new Date();now.setDate(now.getDate()-(now.getDay()+6)%7);now.setHours(12,0,0,0);
+  const vals=[];
+  for(let i=7;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-7*i);vals.push(m[hist.key(d.getTime())]||0);}
+  const max=Math.max(cfg.goalMin,...vals,1);
+  const gy=75-cfg.goalMin/max*70;
+  $("chart").innerHTML=vals.map((v,i)=>{
+    const hh=v/max*70,x=i*40+4;
+    return '<rect x="'+x+'" y="'+(75-hh)+'" width="32" height="'+Math.max(hh,1)+
+      '" rx="4" fill="'+(v>=cfg.goalMin?"#FF7A59":"rgba(255,255,255,.18)")+'"/>';
+  }).join("")+
+  '<line x1="0" x2="320" y1="'+gy+'" y2="'+gy+'" stroke="rgba(255,255,255,.3)" stroke-dasharray="4 4"/>';
+}
+["fastBpm","slowBpm","phaseMin","cycles","vol","age","weight","goalMin"].forEach(id=>
   $(id).addEventListener("input",e=>{cfg[id]=+e.target.value;save();syncHome();}));
 ["metroOn","vibOn","sndOn","smartOn","voiceOn"].forEach(id=>
   $(id).addEventListener("change",e=>{cfg[id]=e.target.checked;save();syncHome();}));
@@ -328,7 +458,8 @@ function announce(){
 function startSession(){
   audio().resume();
   Object.assign(S,{running:true,paused:false,phase:"fast",cycle:0,elapsed:0,
-    last:performance.now(),steps:0,kcal:0,actMs:0,lastCnt:0,lastAdj:0});
+    last:performance.now(),steps:0,kcal:0,actMs:0,lastCnt:0,lastAdj:0,
+    fastMs:0,hrSum:0,hrN:0,recArr:[],hrFastEnd:0,recDone:true,outMs:0,coachSaid:false});
   show("session");wakeLock();
   if(cfg.metroOn)metro.start(curBpm());
   announce();render();
@@ -341,6 +472,20 @@ function tick(){
   /* метрики: шаги из каденса, ккал из MET (быстро 5.0 / спокойно 3.0) */
   S.steps+=dt/60000*curBpm();
   S.kcal+=dt/60000*(S.phase==="fast"?5.0:3.0)*3.5*cfg.weight/200;
+  if(S.phase==="fast")S.fastMs+=dt;
+  if(hrVal){S.hrSum+=hrVal;S.hrN++;}
+  /* восстановление пульса: падение за 60 с после быстрой фазы */
+  if(S.phase==="slow"&&S.hrFastEnd&&!S.recDone&&S.elapsed>=60000&&hrVal){
+    S.recArr.push(S.hrFastEnd-hrVal);S.recDone=true;
+  }
+  /* голосовой коуч: вне зоны дольше 2 минут подряд */
+  if(cfg.smartOn&&cfg.voiceOn&&hrVal){
+    const [lo,hi]=zone(S.phase);
+    if(hrVal<lo-2||hrVal>hi+2){
+      S.outMs+=dt;
+      if(S.outMs>120000&&!S.coachSaid){say(hrVal<lo?"coachUp":"coachDown");S.coachSaid=true;}
+    } else {S.outMs=0;S.coachSaid=false;}
+  }
   /* отсчёт 3-2-1 перед сменой фазы */
   const remainS=Math.ceil((phaseMs()-S.elapsed)/1000);
   if(cfg.sndOn&&remainS<=3&&remainS>=1&&remainS!==S.lastCnt){
@@ -358,8 +503,8 @@ function tick(){
   render();
 }
 function nextPhase(){
-  S.elapsed=0;S.lastCnt=0;
-  if(S.phase==="fast"){S.phase="slow";}
+  S.elapsed=0;S.lastCnt=0;S.outMs=0;S.coachSaid=false;
+  if(S.phase==="fast"){S.hrFastEnd=hrVal||0;S.recDone=!hrVal;S.phase="slow";}
   else{S.phase="fast";S.cycle++;
     if(S.cycle>=cfg.cycles){finish(true);return;}}
   metro.bpm=curBpm();announce();
@@ -389,8 +534,11 @@ function finish(fanfare){
   /* сохраняем тренировку длиннее минуты в историю */
   if(S.actMs>60000){
     hist.add({d:hist.key(Date.now()),min:Math.round(S.actMs/60000),
-      st:Math.round(S.steps),kc:Math.round(S.kcal)});
-    renderHist();
+      st:Math.round(S.steps),kc:Math.round(S.kcal),
+      fm:Math.round(S.fastMs/60000*10)/10,
+      hr:S.hrN?Math.round(S.hrSum/S.hrN):0,
+      rec:S.recArr.length?Math.round(S.recArr.reduce((a,b)=>a+b,0)/S.recArr.length):0});
+    renderHist();renderGoal();renderProg();
   }
   if(fanfare){
     say("sayDone");
@@ -449,7 +597,48 @@ function adjust(d){
   save();metro.bpm=curBpm();render();
 }
 
-applyI18n();show("home");hrUI();
+/* ---------- онбординг (первый запуск) ---------- */
+function onbSync(){
+  $("onbAgeVal").textContent=cfg.age;
+  $("onbWeightVal").textContent=cfg.weight+" "+t("kg");
+  $("onbGoalVal").textContent=cfg.goalMin+" "+t("minU");
+  $("onbAge").value=cfg.age;$("onbWeight").value=cfg.weight;$("onbGoal").value=cfg.goalMin;
+  document.querySelectorAll("#onbLang button").forEach(b=>b.classList.toggle("on",b.dataset.lang===cfg.lang));
+}
+[["onbAge","age"],["onbWeight","weight"],["onbGoal","goalMin"]].forEach(([el,k])=>
+  $(el).addEventListener("input",e=>{cfg[k]=+e.target.value;save();onbSync();}));
+document.querySelectorAll("#onbLang button").forEach(b=>
+  b.addEventListener("click",()=>{cfg.lang=b.dataset.lang;save();applyI18n();onbSync();}));
+$("onbGo").onclick=()=>{cfg.onboarded=true;save();$("onb").style.display="none";syncHome();};
+
+/* ---------- тест-калибровка зон: 3 мин максимально быстрой ходьбы ---------- */
+const CAL={timer:null,samples:[],t0:0};
+$("calibBtn").onclick=()=>{
+  if(!hrDev){$("calibNote").textContent="⚠ "+t("calibNeedHr");return;}
+  audio().resume();
+  $("calib").style.display="block";
+  CAL.samples=[];CAL.t0=performance.now();
+  if(cfg.metroOn)metro.start(cfg.fastBpm);
+  CAL.timer=setInterval(()=>{
+    const el=performance.now()-CAL.t0,rem=Math.max(0,180000-el);
+    $("calibClock").textContent=fmtMs(rem);
+    $("calibHr").textContent=hrVal?("♥ "+hrVal):"—";
+    if(hrVal&&el>120000)CAL.samples.push(hrVal); // усредняем последнюю минуту
+    if(rem<=0)endCalib(true);
+  },500);
+};
+$("calibStop").onclick=()=>endCalib(false);
+function endCalib(ok){
+  clearInterval(CAL.timer);CAL.timer=null;metro.stop();
+  $("calib").style.display="none";
+  if(ok&&CAL.samples.length){
+    cfg.calibHr=Math.round(CAL.samples.reduce((a,b)=>a+b,0)/CAL.samples.length);
+    save();syncHome();
+  }
+}
+
+applyI18n();show("home");hrUI();onbSync();
+if(!cfg.onboarded)$("onb").style.display="block";
 </script>
 </body>
 </html>
