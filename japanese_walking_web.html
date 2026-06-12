@@ -436,14 +436,31 @@ const SND={fast:[[523,.5],[784,.9]],slow:[[784,.5],[523,1.0]],
            finish:[[523,.4],[659,.4],[784,1.2]],
            coachUp:[[659,.3],[880,.6]],coachDown:[[880,.3],[587,.7]]};
 
-/* metronome: look-ahead scheduler — drift-free, один чёткий тик на шаг */
+/* щелчок механического метронома: короткий шумовой импульс через
+   полосовой фильтр — резкая атака, без «хвоста» */
+let _clickBuf=null;
+function click(time,vol){
+  const a=audio();
+  if(!_clickBuf){
+    _clickBuf=a.createBuffer(1,Math.floor(a.sampleRate*0.02),a.sampleRate);
+    const d=_clickBuf.getChannelData(0);
+    for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3);
+  }
+  const src=a.createBufferSource();src.buffer=_clickBuf;
+  const f=a.createBiquadFilter();f.type="bandpass";f.frequency.value=2500;f.Q.value=1.4;
+  const g=a.createGain();g.gain.value=vol*2.2;
+  src.connect(f);f.connect(g);g.connect(a.destination);
+  src.start(time);
+}
+
+/* metronome: look-ahead scheduler — drift-free, ОДИН чёткий щелчок на шаг */
 const metro={timer:null,next:0,bpm:120,
   start(bpm){this.bpm=bpm;if(this.timer)return;
     this.next=audio().currentTime+0.1;
     this.timer=setInterval(()=>{
       const a=audio();
       while(this.next<a.currentTime+0.12){
-        blip(this.next,1700,cfg.vol/100*0.75,0.035);
+        click(this.next,cfg.vol/100*0.8);
         this.next+=60/this.bpm;
       }
     },25);},

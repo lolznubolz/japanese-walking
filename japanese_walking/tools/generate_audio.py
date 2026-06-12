@@ -79,9 +79,31 @@ def chime(notes, vol=0.5):
     return out
 
 
-# Metronome: ONE crisp tick per step (single pitch, sharp envelope)
-save("tick.wav", tone(1700, 0.035, vol=0.75, attack=0.001, decay=0.03))
-save("tock.wav", tone(1700, 0.035, vol=0.75, attack=0.001, decay=0.03))
+# Metronome: ONE crisp mechanical click per step — band-limited noise
+# burst with instant attack (no tonal "tail" that smears on phone speakers)
+import random
+
+random.seed(42)  # deterministic builds
+
+
+def mech_click(dur=0.018, vol=0.95):
+    n = int(SR * dur)
+    out = []
+    prev = 0.0
+    for i in range(n):
+        t = i / SR
+        env = (1 - i / n) ** 3
+        noise = random.uniform(-1, 1)
+        # crude band-pass: difference of successive samples (high-pass)
+        # mixed with a 2.4 kHz partial for body
+        hp = noise - prev
+        prev = noise
+        out.append(vol * env * (0.7 * hp + 0.5 * math.sin(2 * math.pi * 2400 * t)))
+    return out
+
+
+save("tick.wav", mech_click())
+save("tock.wav", mech_click())
 
 # Countdown blip (3-2-1 before each phase change)
 save("count.wav", tone(1320, 0.07, vol=0.55, decay=0.06))
