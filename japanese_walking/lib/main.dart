@@ -4,6 +4,7 @@ import 'models/app_settings.dart';
 import 'services/heart_rate_service.dart';
 import 'theme.dart';
 import 'ui/home_screen.dart';
+import 'ui/onboarding_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,7 +38,9 @@ class _JapaneseWalkingAppState extends State<JapaneseWalkingApp> {
         title: 'Japanese Walking',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.dark(),
-        home: HomeScreen(settings: widget.settings, hr: hr),
+        home: widget.settings.onboarded
+            ? HomeScreen(settings: widget.settings, hr: hr)
+            : OnboardingScreen(settings: widget.settings),
       ),
     );
   }

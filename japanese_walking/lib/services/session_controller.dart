@@ -37,6 +37,7 @@ class SessionController extends ChangeNotifier {
   // Live metrics (estimated from cadence + body weight, MET 5.0 / 3.0)
   double steps = 0;
   double kcal = 0;
+  double fastMs = 0;
 
   final Stopwatch _phaseClock = Stopwatch();
   final Stopwatch _sessionClock = Stopwatch();
@@ -45,6 +46,16 @@ class SessionController extends ChangeNotifier {
   int _lastAdjustMs = 0;
   Timer? _ui;
   bool? _hasVibrator;
+
+  // HR analytics: session average, 1-min recovery after fast phases,
+  // out-of-zone voice coaching.
+  int _hrSum = 0;
+  int _hrN = 0;
+  final List<int> _recoveries = [];
+  int _hrFastEnd = 0;
+  bool _recDone = true;
+  double _outZoneMs = 0;
+  bool _coachSaid = false;
 
   // --- Derived values for the UI ---
   Duration get phaseElapsed => _phaseClock.elapsed;
@@ -77,9 +88,17 @@ class SessionController extends ChangeNotifier {
     phase = Phase.fast;
     steps = 0;
     kcal = 0;
+    fastMs = 0;
     _lastMetricMs = 0;
     _lastCountSec = 0;
     _lastAdjustMs = 0;
+    _hrSum = 0;
+    _hrN = 0;
+    _recoveries.clear();
+    _hrFastEnd = 0;
+    _recDone = true;
+    _outZoneMs = 0;
+    _coachSaid = false;
     state = SessionState.running;
     _phaseClock
       ..reset()
@@ -146,6 +165,35 @@ class SessionController extends ChangeNotifier {
     final met = phase == Phase.fast ? 5.0 : 3.0;
     steps += dtMin * currentBpm;
     kcal += dtMin * met * 3.5 * settings.weightKg / 200.0;
+    if (phase == Phase.fast) fastMs += dtMin * 60000;
+
+    final liveHr = hr?.bpm;
+    if (liveHr != null) {
+      _hrSum += liveHr;
+      _hrN++;
+      // 1-minute HR recovery after a fast phase.
+      if (phase == Phase.slow &&
+          _hrFastEnd > 0 &&
+          !_recDone &&
+          phaseElapsed.inMilliseconds >= 60000) {
+        _recoveries.add(_hrFastEnd - liveHr);
+        _recDone = true;
+      }
+      // Voice coach: out of zone for >2 minutes straight.
+      if (settings.smartMode && settings.voiceEnabled) {
+        final (lo, hi) = currentZone;
+        if (liveHr < lo - 2 || liveHr > hi + 2) {
+          _outZoneMs += dtMin * 60000;
+          if (_outZoneMs > 120000 && !_coachSaid) {
+            _say(liveHr < lo ? 'coachUp' : 'coachDown');
+            _coachSaid = true;
+          }
+        } else {
+          _outZoneMs = 0;
+          _coachSaid = false;
+        }
+      }
+    }
 
     // 3-2-1 countdown before each phase change.
     final remainSec = (phaseLength - phaseElapsed).inMilliseconds ~/ 1000 + 1;
@@ -181,7 +229,11 @@ class SessionController extends ChangeNotifier {
 
   void _nextPhase() {
     _lastCountSec = 0;
+    _outZoneMs = 0;
+    _coachSaid = false;
     if (phase == Phase.fast) {
+      _hrFastEnd = hr?.bpm ?? 0;
+      _recDone = _hrFastEnd == 0;
       phase = Phase.slow;
     } else {
       phase = Phase.fast;
@@ -237,6 +289,12 @@ class SessionController extends ChangeNotifier {
         minutes: (_sessionClock.elapsedMilliseconds / 60000).round(),
         steps: steps.round(),
         kcal: kcal.round(),
+        fastMin: (fastMs / 60000 * 10).round() / 10,
+        avgHr: _hrN > 0 ? (_hrSum / _hrN).round() : 0,
+        recovery: _recoveries.isNotEmpty
+            ? (_recoveries.reduce((a, b) => a + b) / _recoveries.length)
+                .round()
+            : 0,
       ));
     }
     if (playFanfare) {

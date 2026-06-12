@@ -65,6 +65,22 @@ class S {
     'stepsU': 'шагов',
     'kcalU': 'ккал',
     'minU': 'мин',
+    'onbText':
+        'Метод университета Синсю: 3 минуты быстро + 3 минуты спокойно. Пара настроек — и в путь.',
+    'onbStart': 'Поехали!',
+    'goalSetting': 'Цель: быстрых минут в неделю',
+    'weeklyGoal': 'Быстрые минуты за неделю',
+    'calib': 'Тест зон (3 мин)',
+    'calibRun': 'Шагайте максимально быстро 3 минуты — измеряю рабочий пульс',
+    'calibDone': 'Зоны откалиброваны: быстрая зона',
+    'calibNeedHr': 'Сначала подключите часы',
+    'apply': 'Применить',
+    'chartT': 'Быстрые минуты по неделям',
+    'coachUp': 'Пульс ниже зоны. Прибавьте шагу!',
+    'coachDown': 'Пульс выше зоны. Сбавьте темп.',
+    'progrW': 'Неделя',
+    'progrR': 'программы — рекомендуем',
+    'progrC': 'циклов',
   };
 
   static const _en = {
@@ -125,5 +141,21 @@ class S {
     'stepsU': 'steps',
     'kcalU': 'kcal',
     'minU': 'min',
+    'onbText':
+        'The Shinshu University method: 3 minutes fast + 3 minutes easy. A couple of settings and off you go.',
+    'onbStart': "Let's go!",
+    'goalSetting': 'Goal: fast minutes per week',
+    'weeklyGoal': 'Fast minutes this week',
+    'calib': 'Zone test (3 min)',
+    'calibRun': 'Walk as fast as you can for 3 minutes — measuring your working HR',
+    'calibDone': 'Zones calibrated: fast zone',
+    'calibNeedHr': 'Connect your watch first',
+    'apply': 'Apply',
+    'chartT': 'Fast minutes by week',
+    'coachUp': 'Heart rate below zone. Pick up the pace!',
+    'coachDown': 'Heart rate above zone. Slow down.',
+    'progrW': 'Week',
+    'progrR': 'of the program — recommended',
+    'progrC': 'cycles',
   };
 }

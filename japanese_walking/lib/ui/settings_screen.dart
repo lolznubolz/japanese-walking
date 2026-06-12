@@ -4,6 +4,7 @@ import '../l10n/strings.dart';
 import '../models/app_settings.dart';
 import '../services/heart_rate_service.dart';
 import '../theme.dart';
+import 'calibration_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key, required this.settings, required this.hr});
@@ -62,6 +63,15 @@ class SettingsScreen extends StatelessWidget {
                 label:
                     '${settings.cycles} (${s['totalTime']}: ${settings.totalDuration.inMinutes} ${s['minutes']})',
                 onChanged: (v) => settings.cycles = v.round(),
+              ),
+              _SliderTile(
+                title: s['goalSetting'],
+                value: settings.goalMinutes.toDouble(),
+                min: 30,
+                max: 180,
+                divisions: 15,
+                label: '${settings.goalMinutes} ${s['minU']}',
+                onChanged: (v) => settings.goalMinutes = v.round(),
               ),
 
               const SizedBox(height: 8),
@@ -130,9 +140,31 @@ class SettingsScreen extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
                     '${s['targetZone']}: 🔥 ${settings.hrZone(fast: true).$1}–${settings.hrZone(fast: true).$2} · '
-                    '🌿 ${settings.hrZone(fast: false).$1}–${settings.hrZone(fast: false).$2}',
+                    '🌿 ${settings.hrZone(fast: false).$1}–${settings.hrZone(fast: false).$2}'
+                    '${settings.calibHr > 0 ? ' ✅ ${s['calibDone']} ${settings.calibHr - 8}–${settings.calibHr + 4}' : ''}',
                     style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.6)),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: FilledButton.tonalIcon(
+                    icon: const Text('🎯'),
+                    label: Text(s['calib']),
+                    onPressed: () {
+                      if (!hr.connected) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(s['calibNeedHr'])),
+                        );
+                        return;
+                      }
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => CalibrationScreen(
+                              settings: settings, hr: hr),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],

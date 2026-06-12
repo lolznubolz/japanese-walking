@@ -58,12 +58,27 @@ class AppSettings extends ChangeNotifier {
   int get weightKg => _prefs.getInt('weightKg') ?? 75;
   set weightKg(int v) => _set('weightKg', v.clamp(40, 150));
 
+  /// First-launch onboarding shown?
+  bool get onboarded => _prefs.getBool('onboarded') ?? false;
+  set onboarded(bool v) => _set('onboarded', v);
+
+  /// Weekly goal: fast-phase minutes (Shinshu studies: ≥60 min/week).
+  int get goalMinutes => _prefs.getInt('goalMinutes') ?? 60;
+  set goalMinutes(int v) => _set('goalMinutes', v.clamp(30, 180));
+
+  /// Personal fast-zone HR from the 3-min calibration test (0 = not done).
+  int get calibHr => _prefs.getInt('calibHr') ?? 0;
+  set calibHr(int v) => _set('calibHr', v.clamp(0, 220));
+
   /// Tanaka formula.
   int get hrMax => (208 - 0.7 * age).round();
 
-  /// (lo, hi) target HR for a phase: fast 70–80%, slow 50–65% of max.
+  /// (lo, hi) target HR for a phase: fast 70–80% of max (or the personal
+  /// calibrated zone), slow 50–65% of max.
   (int, int) hrZone({required bool fast}) => fast
-      ? ((hrMax * 0.70).round(), (hrMax * 0.80).round())
+      ? (calibHr > 0
+          ? (calibHr - 8, calibHr + 4)
+          : ((hrMax * 0.70).round(), (hrMax * 0.80).round()))
       : ((hrMax * 0.50).round(), (hrMax * 0.65).round());
 
   // --- Locale: 'ru' | 'en' ---
