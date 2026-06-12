@@ -46,7 +46,6 @@ jobs:
         run: flutter build appbundle --release
 
       - name: Sign AAB with upload key
-        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
         env:
           KS: ${{ secrets.KEYSTORE_BASE64 }}
           KS_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
