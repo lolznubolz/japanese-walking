@@ -6,6 +6,9 @@
 <meta name="theme-color" content="#0E1116">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <title>Японская ходьба · Japanese Walking</title>
 <style>
   :root{
@@ -675,5 +678,6 @@ function endCalib(ok){
 applyI18n();show("home");hrUI();onbSync();
 if(!cfg.onboarded)$("onb").style.display="block";
 </script>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}</script>
 </body>
 </html>
