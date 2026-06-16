@@ -76,6 +76,24 @@ button.small{width:46px;height:46px;padding:0;border-radius:50%;font-size:22px;l
   :focus-visible{outline:2px solid var(--slow);outline-offset:2px;border-radius:8px}
   input[type=range]:focus-visible{outline-offset:6px}
   @media (prefers-reduced-motion:reduce){button{transition:none}button:active{transform:none}}
+  :root{--barDim:rgba(242,235,221,.16)}
+  body.light{--bg:#F5F1E8;--card:#FFFFFF;--txt:#241E16;--dim:#6B5E4C;--line:rgba(36,30,22,.12);--barDim:rgba(36,30,22,.14)}
+  body.light .switch{background:#d9d2c4}
+  body.light .switch::after{background:#fff}
+  body.light input[type=range]::-webkit-slider-runnable-track{background:rgba(36,30,22,.14)}
+  body.light input[type=range]::-moz-range-track{background:rgba(36,30,22,.14)}
+  body.light button.ghost{background:rgba(36,30,22,.06)}
+  body.light .pulse{border-color:rgba(36,30,22,.12)}
+  body.light .bar{background:rgba(36,30,22,.10)}
+  body.light .seg button.on{background:rgba(36,30,22,.08)}
+  .badge{display:inline-block;background:rgba(242,235,221,.08);border-radius:12px;padding:4px 10px;margin:0 6px 6px 0;font-size:13px}
+  body.light .badge{background:rgba(36,30,22,.06)}
+  .badge b{color:var(--fast);font-weight:700}
+  .barDim{fill:var(--barDim)}
+  .goalLine{stroke:var(--dim)}
+  .chartLegend{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;font-size:11px;color:var(--dim)}
+  .chartLegend span{display:inline-flex;align-items:center;gap:5px}
+  .chartLegend i{width:10px;height:10px;border-radius:3px;display:inline-block}
 </style>
 </head>
 <body>
@@ -148,6 +166,7 @@ button.small{width:46px;height:46px;padding:0;border-radius:50%;font-size:22px;l
       <div class="row"><label data-i="tickVolume"></label><span class="val" id="volVal"></span></div>
       <input type="range" id="vol" min="0" max="100" step="5">
       <div class="row"><label data-i="voice"></label><input type="checkbox" class="switch" id="voiceOn"></div>
+      <div class="row"><label data-i="lightTheme"></label><input type="checkbox" class="switch" id="themeOn"></div>
       <div class="row"><label data-i="weight"></label><span class="val" id="weightVal"></span></div>
       <input type="range" id="weight" min="40" max="150" step="1">
       <div class="row"><label data-i="height"></label><span class="val" id="heightVal"></span></div>
@@ -180,6 +199,7 @@ button.small{width:46px;height:46px;padding:0;border-radius:50%;font-size:22px;l
       <div style="margin-top:10px">
         <div class="note" style="text-align:left" data-i="chartT"></div>
         <svg id="chart" width="100%" height="80" viewBox="0 0 320 80" preserveAspectRatio="none"></svg>
+        <div class="chartLegend" id="chartLegend"></div>
       </div>
       <div id="histList" style="margin-top:10px"></div>
     </div>
@@ -266,6 +286,7 @@ const I18N = {
   voice:"Голос (синтез речи) вместо мелодий",weight:"Вес (для калорий)",kg:"кг",
   height:"Рост (для калорий)",cm:"см",paceHint:"Ориентир — усилие, а не цифра: подстройте темп под себя.",kcalNote:"Калории — приблизительная оценка по росту, темпу и весу.",
   restHr:"Пульс покоя (точные зоны)",restHrNote:"0 = зоны по формуле. Укажите пульс покоя — зоны станут точнее (метод Карвонена).",zIn:"в зоне",zLow:"прибавьте",zOver:"сбавьте",zHigh:"пульс высокий — сбавьте",quality:"Качество",inZoneShort:"в зоне",hrrTrend:"Восстановление пульса (посл./ср.)",
+  lightTheme:"Светлая тема",bW:"трен.",bD:"дн.",kmU:"км",lgHit:"цель достигнута",lgUnder:"ниже цели",lgGoal:"цель",
   sayFast:"Ускорьтесь!",saySlow:"Спокойный темп",sayDone:"Тренировка завершена. Отличная работа!",
   streak:"Серия дней",totalWorkouts:"Всего тренировок",stepsU:"шагов",kcalU:"ккал",minU:"мин",bpm:"уд/мин",
   onbText:"Метод Университета Синсю: 3 минуты быстро, 3 минуты спокойно, 5 раз. «Быстро» — усилие ~7/10 (дышать тяжело, говорить трудно), «спокойно» — лёгкий восстановительный шаг. Метроном помогает держать ритм, но ориентир — ваше усилие.",
@@ -293,6 +314,7 @@ const I18N = {
   voice:"Speech voice instead of chimes",weight:"Weight (for calories)",kg:"kg",
   height:"Height (for calories)",cm:"cm",paceHint:"Go by effort, not the number — tune the pace to yourself.",kcalNote:"Calories are a rough estimate from height, pace and weight.",
   restHr:"Resting HR (accurate zones)",restHrNote:"0 = formula zones. Enter resting HR for more accurate zones (Karvonen).",zIn:"in zone",zLow:"push harder",zOver:"ease off",zHigh:"HR high — slow down",quality:"Quality",inZoneShort:"in zone",hrrTrend:"HR recovery (last/avg)",
+  lightTheme:"Light theme",bW:"workouts",bD:"days",kmU:"km",lgHit:"goal met",lgUnder:"below goal",lgGoal:"goal",
   sayFast:"Speed up!",saySlow:"Easy pace",sayDone:"Workout complete. Great job!",
   streak:"Day streak",totalWorkouts:"Total workouts",stepsU:"steps",kcalU:"kcal",minU:"min",bpm:"bpm",
   onbText:"The Shinshu University method: 3 min fast, 3 min easy, 5 times. \"Fast\" means effort ~7/10 (hard to talk); \"easy\" is a light recovery pace. The metronome keeps your rhythm, but go by effort.",
@@ -306,7 +328,7 @@ const I18N = {
 };
 
 /* ---------- settings ---------- */
-const DEF={fastBpm:135,slowBpm:100,phaseMin:3,cycles:5,metroOn:true,vibOn:true,sndOn:true,vol:80,lang:"ru",smartOn:false,age:40,voiceOn:false,weight:75,height:170,restHr:0,onboarded:false,goalMin:60,calibHr:0};
+const DEF={fastBpm:135,slowBpm:100,phaseMin:3,cycles:5,metroOn:true,vibOn:true,sndOn:true,vol:80,lang:"ru",smartOn:false,age:40,voiceOn:false,weight:75,height:170,restHr:0,onboarded:false,goalMin:60,calibHr:0,themeOn:false};
 let cfg;
 try{cfg=Object.assign({},DEF,JSON.parse(localStorage.getItem("jw")||"{}"));}catch(e){cfg=Object.assign({},DEF);}
 const save=()=>{try{localStorage.setItem("jw",JSON.stringify(cfg));}catch(e){}};
@@ -336,6 +358,7 @@ function syncHome(){
   $("zoneVal").textContent=t("fastPhase")+" "+zf[0]+"–"+zf[1]+"  ·  "+t("slowPhase")+" "+zs[0]+"–"+zs[1];
   $("smartSet").style.display=cfg.smartOn?"block":"none";
   $("voiceOn").checked=cfg.voiceOn;
+  $("themeOn").checked=cfg.themeOn; document.body.classList.toggle("light",cfg.themeOn);
   $("weight").value=cfg.weight; $("weightVal").textContent=cfg.weight+" "+t("kg");
   $("height").value=cfg.height; $("heightVal").textContent=cfg.height+" "+t("cm");
   $("goalMin").value=cfg.goalMin; $("goalMinVal").textContent=cfg.goalMin+" "+t("minU");
@@ -419,10 +442,10 @@ function renderProg(){
 }
 function renderBadges(h){
   const km=h.reduce((a,r)=>a+r.st,0)*0.7/1000,s=hist.streak();
-  const B=[[h.length>=1,"🥇 1"],[h.length>=10,"🏅 10"],[h.length>=50,"💪 50"],
-           [s>=7,"🔥 7"],[s>=30,"🌟 30"],[km>=100,"🚶 100 km"]];
+  const B=[[h.length>=1,"1 "+t("bW")],[h.length>=10,"10 "+t("bW")],[h.length>=50,"50 "+t("bW")],
+           [s>=7,"7 "+t("bD")],[s>=30,"30 "+t("bD")],[km>=100,"100 "+t("kmU")]];
   $("badges").innerHTML=B.filter(b=>b[0]).map(b=>
-    '<span style="background:rgba(242,235,221,.08);border-radius:12px;padding:4px 10px;margin-right:6px">'+b[1]+"</span>").join("");
+    '<span class="badge"><b>★</b> '+b[1]+"</span>").join("");
 }
 function renderChart(h){
   const m={};h.forEach(r=>{const k=weekKey(r.d);m[k]=(m[k]||0)+(r.fm||0);});
@@ -434,13 +457,14 @@ function renderChart(h){
   $("chart").innerHTML=vals.map((v,i)=>{
     const hh=v/max*70,x=i*40+4;
     return '<rect x="'+x+'" y="'+(75-hh)+'" width="32" height="'+Math.max(hh,1)+
-      '" rx="4" fill="'+(v>=cfg.goalMin?"#FF6B4A":"rgba(242,235,221,.16)")+'"/>';
+      '" rx="4" '+(v>=cfg.goalMin?'fill="#FF6B4A"':'class="barDim"')+'/>';
   }).join("")+
-  '<line x1="0" x2="320" y1="'+gy+'" y2="'+gy+'" stroke="rgba(242,235,221,.30)" stroke-dasharray="4 4"/>';
+  '<line x1="0" x2="320" y1="'+gy+'" y2="'+gy+'" class="goalLine" stroke-dasharray="4 4"/>';
+  $("chartLegend").innerHTML='<span><i style="background:var(--fast)"></i>'+t("lgHit")+'</span><span><i style="background:var(--barDim)"></i>'+t("lgUnder")+'</span><span><i style="width:14px;height:0;border-top:2px dashed var(--dim);border-radius:0"></i>'+t("lgGoal")+' '+cfg.goalMin+' '+t("minU")+'</span>';
 }
 ["fastBpm","slowBpm","phaseMin","cycles","vol","age","weight","height","goalMin","restHr"].forEach(id=>
   $(id).addEventListener("input",e=>{cfg[id]=+e.target.value;save();syncHome();}));
-["metroOn","vibOn","sndOn","smartOn","voiceOn"].forEach(id=>
+["metroOn","vibOn","sndOn","smartOn","voiceOn","themeOn"].forEach(id=>
   $(id).addEventListener("change",e=>{cfg[id]=e.target.checked;save();syncHome();}));
 document.querySelectorAll("#langSeg button").forEach(b=>
   b.addEventListener("click",()=>{cfg.lang=b.dataset.lang;save();applyI18n();}));
