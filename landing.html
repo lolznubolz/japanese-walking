@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Японская ходьба — интервальная тренировка с метрономом · walkbeat</title>
+<meta name="description" content="Японская ходьба: 3 минуты быстро, 3 минуты спокойно. Метроном задаёт темп шага, пульс и история — в браузере, без рекламы. 30 минут, 4 раза в неделю.">
+<meta name="theme-color" content="#16130F">
+<meta property="og:title" content="Японская ходьба — интервальная тренировка с метрономом">
+<meta property="og:description" content="3 минуты быстро, 3 минуты спокойно. Метроном под шаг, пульс и прогресс. Откройте в браузере или скачайте для Android.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://walkbeat.app/">
+<meta property="og:image" content="https://walkbeat.app/icon-512.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;600;700;800&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#16130F; --card:#211C16; --txt:#F2EBDD; --dim:#A89C88;
+    --fast:#FF6B4A; --slow:#7FB69A; --line:rgba(242,235,221,.12); --radius:20px;
+    --disp:'Bricolage Grotesque',sans-serif;
+    --body:'Hanken Grotesk',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--body);line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:0 22px}
+  a{color:inherit}
+  .eyebrow{font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);font-weight:600}
+  h1{font-family:var(--disp);font-weight:800;font-size:clamp(40px,8vw,76px);line-height:1.02;letter-spacing:-.02em;margin:14px 0 0}
+  h2{font-family:var(--disp);font-weight:700;font-size:clamp(26px,4vw,38px);letter-spacing:-.01em;margin:0 0 8px}
+  h3{font-family:var(--disp);font-weight:600;font-size:19px;margin:0 0 6px}
+  p{margin:10px 0}
+  .lead{font-size:clamp(17px,2.2vw,20px);color:var(--txt);max-width:620px}
+  .dim{color:var(--dim)}
+  /* header */
+  header{position:sticky;top:0;z-index:10;backdrop-filter:blur(8px);background:rgba(22,19,15,.72);border-bottom:1px solid var(--line)}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:62px}
+  .brand{font-family:var(--disp);font-weight:700;font-size:20px;letter-spacing:.02em}
+  .brand b{color:var(--fast);font-weight:700}
+  .btn{display:inline-block;font-weight:600;font-size:15px;text-decoration:none;padding:12px 20px;border-radius:14px;cursor:pointer;transition:transform .15s}
+  .btn:active{transform:scale(.97)}
+  .btn.primary{background:var(--fast);color:#16130F}
+  .btn.calm{background:var(--slow);color:#16130F}
+  .btn.ghost{background:rgba(242,235,221,.07);color:var(--txt);border:1px solid var(--line)}
+  .btn.sm{padding:9px 16px;font-size:14px}
+  /* hero */
+  .hero{padding:64px 0 24px}
+  .cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+  /* tempo strip — signature */
+  .tempo{margin:46px 0 8px}
+  .tempo .labels{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-bottom:8px;letter-spacing:.04em}
+  .strip{display:flex;height:54px;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+  .seg{flex:1;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-weight:600;font-size:13px;color:#16130F}
+  .seg.f{background:var(--fast)}
+  .seg.s{background:var(--slow)}
+  .tempo .cap{margin-top:10px;font-size:13px;color:var(--dim);text-align:center}
+  /* sections */
+  section{padding:54px 0;border-top:1px solid var(--line)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:26px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px}
+  .card .k{font-family:var(--disp);font-weight:700;font-size:15px;letter-spacing:.04em;color:var(--fast)}
+  .card.s .k{color:var(--slow)}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-top:24px}
+  .stat .n{font-family:var(--disp);font-weight:800;font-size:clamp(34px,6vw,52px);line-height:1;color:var(--fast)}
+  .stat:nth-child(2) .n{color:var(--slow)}
+  .stat .l{font-size:14px;color:var(--dim);margin-top:6px}
+  details{border-top:1px solid var(--line);padding:16px 0}
+  details summary{font-family:var(--disp);font-weight:600;font-size:17px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:12px}
+  details summary::-webkit-details-marker{display:none}
+  details summary::after{content:"+";color:var(--dim);font-weight:400}
+  details[open] summary::after{content:"–"}
+  details p{color:var(--dim);margin:10px 0 0}
+  footer{padding:40px 0 60px;border-top:1px solid var(--line);color:var(--dim);font-size:14px}
+  .footlinks{display:flex;flex-wrap:wrap;gap:18px;margin-top:12px}
+  .footlinks a{text-decoration:none;color:var(--dim)}
+  .footlinks a:hover{color:var(--txt)}
+  :focus-visible{outline:2px solid var(--slow);outline-offset:3px;border-radius:6px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <div class="brand">walk<b>beat</b></div>
+    <a class="btn calm sm" href="/walk/">Открыть приложение</a>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="hero" style="border-top:0">
+    <div class="eyebrow">Японская ходьба · интервальная тренировка</div>
+    <h1>Забудьте<br>про 10 000 шагов.</h1>
+    <p class="lead">Три минуты быстро, три минуты спокойно — и так пять раз. Метроном держит темп шага, часы показывают пульс. Тридцать минут, четыре раза в неделю.</p>
+    <div class="cta">
+      <a class="btn primary" href="/walk/">Начать тренировку</a>
+      <a class="btn ghost" href="https://github.com/lolznubolz/japanese-walking/releases/latest/download/yaponskaya-hodba.apk">Скачать для Android</a>
+    </div>
+
+    <div class="tempo" aria-hidden="true">
+      <div class="labels"><span>старт</span><span>30 минут · 5 циклов</span><span>финиш</span></div>
+      <div class="strip">
+        <div class="seg f">быстро</div><div class="seg s">спокойно</div>
+        <div class="seg f">быстро</div><div class="seg s">спокойно</div>
+        <div class="seg f">быстро</div><div class="seg s">спокойно</div>
+        <div class="seg f">быстро</div><div class="seg s">спокойно</div>
+        <div class="seg f">быстро</div><div class="seg s">спокойно</div>
+      </div>
+      <div class="cap">Один цикл — 3 минуты быстрого шага и 3 минуты спокойного. Ритм задаёт метроном.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Почему именно так</h2>
+    <p class="lead dim">Чередование нагрузки работает лучше, чем монотонная прогулка: за то же время — больше пользы для сердца, ног и давления. Главное — попадать в темп, а это берёт на себя приложение.</p>
+    <div class="grid">
+      <div class="card"><div class="k">Метроном под шаг</div><h3>Не сбиться с темпа</h3><p class="dim">Один чёткий щелчок на каждый шаг — 135 в быстрой фазе, 100 в спокойной. Темп можно подстроить под себя.</p></div>
+      <div class="card s"><div class="k">Пульс по Bluetooth</div><h3>Видеть нагрузку</h3><p class="dim">Подключите часы или нагрудный датчик — пульс и целевые зоны прямо на экране тренировки.</p></div>
+      <div class="card"><div class="k">Умный режим</div><h3>Держать зону</h3><p class="dim">Приложение само ускоряет или замедляет метроном, чтобы пульс оставался в нужном диапазоне.</p></div>
+      <div class="card s"><div class="k">История</div><h3>Видеть прогресс</h3><p class="dim">Минуты, шаги, калории, восстановление пульса и недельная цель «быстрых» минут.</p></div>
+      <div class="card"><div class="k">Работает офлайн</div><h3>Без интернета</h3><p class="dim">Установите как приложение на телефон — открывается и тренирует даже без сети.</p></div>
+      <div class="card s"><div class="k">Честно</div><h3>Без рекламы</h3><p class="dim">Никаких баннеров и сбора данных. Тренировка и ваши результаты остаются на устройстве.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Подтверждено наукой</h2>
+    <p class="lead dim">Метод интервальной ходьбы исследовали в Университете Синсю (Япония). У тех, кто чередовал быстрый и спокойный шаг, результаты заметно превзошли обычную прогулку.</p>
+    <div class="stats">
+      <div class="stat"><div class="n">3 + 3</div><div class="l">минуты: быстро и спокойно</div></div>
+      <div class="stat"><div class="n">4×</div><div class="l">тренировки в неделю</div></div>
+      <div class="stat"><div class="n">~5 мес.</div><div class="l">наблюдения в исследовании</div></div>
+    </div>
+    <p class="dim" style="margin-top:18px;font-size:13px">Выше выносливость, сильнее мышцы ног, ниже давление по сравнению с ходьбой в одном темпе. Перед началом регулярных тренировок проконсультируйтесь с врачом.</p>
+  </section>
+
+  <section>
+    <h2>Вопросы</h2>
+    <details><summary>Нужна ли специальная подготовка?</summary><p>Нет. Подходит для начинающих: «быстро» — это темп, при котором тяжеловато говорить, «спокойно» — комфортный шаг. Темп настраивается.</p></details>
+    <details><summary>На чём работает?</summary><p>В любом современном браузере. На Android можно установить как приложение или скачать APK. На iPhone — добавить на экран «Домой» из Safari.</p></details>
+    <details><summary>Обязателен ли пульсометр?</summary><p>Нет. Без датчика работают метроном, фазы и история. Пульс и умный режим включаются, если подключить часы по Bluetooth (на iPhone Safari Bluetooth недоступен).</p></details>
+    <details><summary>Сколько стоит?</summary><p>Бесплатно. Без рекламы и без сбора данных.</p></details>
+  </section>
+
+  <section style="text-align:center">
+    <h2>Готовы пройтись?</h2>
+    <p class="lead dim" style="margin:8px auto 0">Откройте приложение прямо в браузере — установка не нужна.</p>
+    <div class="cta" style="justify-content:center">
+      <a class="btn primary" href="/walk/">Начать тренировку</a>
+      <a class="btn ghost" href="https://github.com/lolznubolz/japanese-walking/releases/latest/download/yaponskaya-hodba.apk">Скачать для Android</a>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="brand">walk<b>beat</b></div>
+    <p>Японская ходьба — интервальная тренировка с метрономом.</p>
+    <div class="footlinks">
+      <a href="/walk/">Приложение</a>
+      <a href="/privacy">Конфиденциальность</a>
+      <a href="https://github.com/lolznubolz/japanese-walking/releases/latest/download/yaponskaya-hodba.apk">Android APK</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
