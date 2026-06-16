@@ -69,6 +69,13 @@ button.small{width:46px;height:46px;padding:0;border-radius:50%;font-size:22px;l
 #finished{display:none;text-align:center;padding-top:56px}
 #finished .emoji{font-family:var(--disp);font-weight:800;font-size:42px;color:var(--fast);width:92px;height:92px;line-height:88px;margin:0 auto 10px;border:3px solid var(--fast);border-radius:50%}
 .note{font-size:11px;color:var(--dim);text-align:center;margin-top:10px}
+  button{transition:transform .12s ease,filter .12s ease}
+  button:hover{filter:brightness(1.07)}
+  button.ghost:hover{background:rgba(242,235,221,.14)}
+  button:active{transform:scale(.97)}
+  :focus-visible{outline:2px solid var(--slow);outline-offset:2px;border-radius:8px}
+  input[type=range]:focus-visible{outline-offset:6px}
+  @media (prefers-reduced-motion:reduce){button{transition:none}button:active{transform:none}}
 </style>
 </head>
 <body>
@@ -213,7 +220,7 @@ button.small{width:46px;height:46px;padding:0;border-radius:50%;font-size:22px;l
         <div id="phaseName"></div>
         <div id="clock">03:00</div>
         <div id="hrLive" style="color:var(--fast);font-size:15px;font-weight:600"></div>
-        <div id="zoneLive" style="color:rgba(255,255,255,.45);font-size:12px"></div>
+        <div id="zoneLive" style="color:var(--dim);font-size:12px"></div>
       </div>
     </div>
     <div class="card bpmCard">
@@ -333,7 +340,7 @@ function syncHome(){
   $("height").value=cfg.height; $("heightVal").textContent=cfg.height+" "+t("cm");
   $("goalMin").value=cfg.goalMin; $("goalMinVal").textContent=cfg.goalMin+" "+t("minU");
   $("calibNote").textContent=cfg.calibHr
-    ? "✅ "+t("calibDone")+" "+(cfg.calibHr-8)+"–"+(cfg.calibHr+4)+" "+t("bpm")
+    ? "✓ "+t("calibDone")+" "+(cfg.calibHr-8)+"–"+(cfg.calibHr+4)+" "+t("bpm")
     : "";
   renderHist();renderGoal();renderProg();
 }
@@ -360,7 +367,7 @@ function renderHist(){
   renderBadges(h);renderChart(h);
   $("histList").innerHTML=h.slice(0,7).map(r=>
     '<div class="row" style="font-size:13px;color:var(--dim)"><span>'+r.d+'</span><span>'+
-    r.min+" "+t("minU")+" · "+r.st+" 👟 · "+r.kc+" "+t("kcalU")+
+    r.min+" "+t("minU")+" · "+r.st+" "+t("stepsU")+" · "+r.kc+" "+t("kcalU")+
     (r.hr?" · ♥"+r.hr:"")+(r.rec?" ↓"+r.rec:"")+"</span></div>").join("");
   const rs=h.filter(x=>x.rec).map(x=>x.rec);
   if(rs.length){const last=rs[0],avg=Math.round(rs.reduce((a,b)=>a+b,0)/rs.length);$("hrrRow").style.display="flex";$("hrrVal").textContent=last+" / "+avg+" "+t("bpm")+(last>avg?" ↑":last<avg?" ↓":"");}else $("hrrRow").style.display="none";
@@ -395,7 +402,7 @@ function weekKey(dstr){
 function renderGoal(){
   const wk=weekKey(hist.key(Date.now()));
   const fm=hist.load().filter(r=>weekKey(r.d)===wk).reduce((a,r)=>a+(r.fm||0),0);
-  $("goalTxt").textContent=Math.round(fm)+" / "+cfg.goalMin+" "+t("minU")+(fm>=cfg.goalMin?" ✅":"");
+  $("goalTxt").textContent=Math.round(fm)+" / "+cfg.goalMin+" "+t("minU")+(fm>=cfg.goalMin?" ✓":"");
   $("goalBar").style.width=Math.min(100,fm/cfg.goalMin*100)+"%";
 }
 function renderProg(){
@@ -406,7 +413,7 @@ function renderProg(){
   const rec=Math.min(5,1+weekN);
   if(weekN<=5&&cfg.cycles<rec){
     $("progCard").style.display="block";
-    $("progTxt").textContent="📈 "+t("progrW")+" "+weekN+" "+t("progrR")+" "+rec+" "+t("progrC");
+    $("progTxt").textContent=t("progrW")+" "+weekN+" "+t("progrR")+" "+rec+" "+t("progrC");
     $("progApply").onclick=()=>{cfg.cycles=rec;save();syncHome();};
   } else $("progCard").style.display="none";
 }
@@ -415,7 +422,7 @@ function renderBadges(h){
   const B=[[h.length>=1,"🥇 1"],[h.length>=10,"🏅 10"],[h.length>=50,"💪 50"],
            [s>=7,"🔥 7"],[s>=30,"🌟 30"],[km>=100,"🚶 100 km"]];
   $("badges").innerHTML=B.filter(b=>b[0]).map(b=>
-    '<span style="background:rgba(255,255,255,.08);border-radius:12px;padding:4px 10px;margin-right:6px">'+b[1]+"</span>").join("");
+    '<span style="background:rgba(242,235,221,.08);border-radius:12px;padding:4px 10px;margin-right:6px">'+b[1]+"</span>").join("");
 }
 function renderChart(h){
   const m={};h.forEach(r=>{const k=weekKey(r.d);m[k]=(m[k]||0)+(r.fm||0);});
@@ -427,9 +434,9 @@ function renderChart(h){
   $("chart").innerHTML=vals.map((v,i)=>{
     const hh=v/max*70,x=i*40+4;
     return '<rect x="'+x+'" y="'+(75-hh)+'" width="32" height="'+Math.max(hh,1)+
-      '" rx="4" fill="'+(v>=cfg.goalMin?"#FF7A59":"rgba(255,255,255,.18)")+'"/>';
+      '" rx="4" fill="'+(v>=cfg.goalMin?"#FF6B4A":"rgba(242,235,221,.16)")+'"/>';
   }).join("")+
-  '<line x1="0" x2="320" y1="'+gy+'" y2="'+gy+'" stroke="rgba(255,255,255,.3)" stroke-dasharray="4 4"/>';
+  '<line x1="0" x2="320" y1="'+gy+'" y2="'+gy+'" stroke="rgba(242,235,221,.30)" stroke-dasharray="4 4"/>';
 }
 ["fastBpm","slowBpm","phaseMin","cycles","vol","age","weight","height","goalMin","restHr"].forEach(id=>
   $(id).addEventListener("input",e=>{cfg[id]=+e.target.value;save();syncHome();}));
@@ -603,7 +610,7 @@ function render(){
       $("hrLive").textContent="♥ "+hrVal+" · "+st;$("hrLive").style.color=col;
       $("zoneLive").textContent=t("targetZone")+" "+lo+"–"+hi;
     } else {$("hrLive").textContent="";$("zoneLive").textContent="";}
-  $("statsLive").textContent=Math.round(S.steps)+" 👟 · "+"≈"+Math.round(S.kcal)+" "+t("kcalU");
+  $("statsLive").textContent=Math.round(S.steps)+" "+t("stepsU")+" · "+"≈"+Math.round(S.kcal)+" "+t("kcalU");
 }
 function finish(fanfare){
   S.running=false;clearInterval(S.ui);metro.stop();
@@ -666,7 +673,7 @@ async function hrToggle(){
     hrDev=d;hrUI();
   }catch(e){
     if(e.name!=="NotFoundError"||!/cancel/i.test(e.message||""))
-      $("hrNote").textContent="⚠ "+e.name+": "+e.message;
+      $("hrNote").textContent=""+e.name+": "+e.message;
   }
 }
 $("hrBtn").onclick=hrToggle;
@@ -694,7 +701,7 @@ $("onbGo").onclick=()=>{cfg.onboarded=true;save();$("onb").style.display="none";
 /* ---------- тест-калибровка зон: 3 мин максимально быстрой ходьбы ---------- */
 const CAL={timer:null,samples:[],t0:0};
 $("calibBtn").onclick=()=>{
-  if(!hrDev){$("calibNote").textContent="⚠ "+t("calibNeedHr");return;}
+  if(!hrDev){$("calibNote").textContent=""+t("calibNeedHr");return;}
   audio().resume();
   $("calib").style.display="block";
   CAL.samples=[];CAL.t0=performance.now();
