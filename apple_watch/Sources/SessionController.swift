@@ -21,9 +21,21 @@ final class SessionController: ObservableObject {
     private var timer: Timer?
     private var metro: Timer?
 
+    let age = 40
+
     var currentBpm: Int { phase == .fast ? fastBpm : slowBpm }
     var progress: Double {
         1.0 - Double(remaining) / Double(phaseSeconds)
+    }
+
+    /// Max HR by the Tanaka formula.
+    var hrMax: Int { Int((208.0 - 0.7 * Double(age)).rounded()) }
+
+    /// Target HR zone for the current phase (fast 70–80%, slow 50–65%).
+    var zone: (lo: Int, hi: Int) {
+        phase == .fast
+            ? (Int(Double(hrMax) * 0.70), Int(Double(hrMax) * 0.80))
+            : (Int(Double(hrMax) * 0.50), Int(Double(hrMax) * 0.65))
     }
 
     func start() {

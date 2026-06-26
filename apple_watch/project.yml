@@ -18,11 +18,14 @@ targets:
       - path: Sources/ContentView.swift
       - path: Sources/SessionController.swift
       - path: Sources/SessionView.swift
+      - path: Sources/HeartRateManager.swift
     info:
       path: Generated-Info.plist
       properties:
         CFBundleDisplayName: WalkBeat
         WKApplication: true
+        NSHealthShareUsageDescription: "Показ пульса с датчика часов во время тренировки ходьбы"
+        NSHealthUpdateUsageDescription: "Запись тренировки ходьбы в Здоровье"
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationPortraitUpsideDown

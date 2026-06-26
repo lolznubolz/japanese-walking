@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SessionView: View {
     @StateObject private var c = SessionController()
+    @StateObject private var hr = HeartRateManager()
 
     var body: some View {
         Group {
@@ -9,9 +10,11 @@ struct SessionView: View {
                 VStack(spacing: 6) {
                     Text("🏆").font(.system(size: 40))
                     Text("Готово!").font(.headline)
-                    Text("Отличная работа")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
+                    if hr.bpm > 0 {
+                        Text("♥ ср. \(hr.bpm)")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
                 }
             } else {
                 ZStack {
@@ -30,18 +33,33 @@ struct SessionView: View {
                             .font(.system(size: 13, weight: .bold))
                             .foregroundStyle(c.phase == .fast ? .orange : .teal)
                         Text(timeString(c.remaining))
-                            .font(.system(size: 34, weight: .semibold))
+                            .font(.system(size: 32, weight: .semibold))
                             .monospacedDigit()
-                        Text("Цикл \(c.cycle + 1)/\(c.cycles) · \(c.currentBpm)")
-                            .font(.system(size: 10))
-                            .foregroundStyle(.secondary)
+                        if hr.bpm > 0 {
+                            Text("♥ \(hr.bpm)")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(.red)
+                            Text("зона \(c.zone.lo)–\(c.zone.hi)")
+                                .font(.system(size: 9))
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("Цикл \(c.cycle + 1)/\(c.cycles) · \(c.currentBpm)")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
                 .padding(6)
             }
         }
-        .onAppear { c.start() }
-        .onDisappear { c.stop() }
+        .onAppear {
+            c.start()
+            hr.requestAndStart()
+        }
+        .onDisappear {
+            c.stop()
+            hr.stop()
+        }
     }
 
     private func timeString(_ seconds: Int) -> String {
