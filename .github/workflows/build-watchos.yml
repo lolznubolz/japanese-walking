@@ -1,0 +1,67 @@
+name: Build watchOS (cloud test)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'apple_watch/**'
+      - '.github/workflows/build-watchos.yml'
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select latest Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: apple_watch
+        run: xcodegen generate
+
+      - name: Build for watchOS Simulator (no signing)
+        working-directory: apple_watch
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project WalkBeatWatch.xcodeproj \
+            -scheme WalkBeatWatch \
+            -sdk watchsimulator \
+            -configuration Debug \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build 2>&1 | tail -60
+
+      - name: Launch in watch simulator and capture screenshot
+        working-directory: apple_watch
+        continue-on-error: true
+        run: |
+          set -x
+          APP=$(find build/Build/Products -maxdepth 3 -name "*.app" | head -1)
+          echo "App: $APP"
+          BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$APP/Info.plist")
+          echo "Bundle id: $BUNDLE_ID"
+          UDID=$(xcrun simctl list devices available | grep -m1 "Apple Watch" | grep -oE "[0-9A-F-]{36}")
+          echo "Watch simulator UDID: $UDID"
+          xcrun simctl boot "$UDID" || true
+          sleep 25
+          xcrun simctl install "$UDID" "$APP"
+          xcrun simctl launch "$UDID" "$BUNDLE_ID" || true
+          sleep 12
+          mkdir -p "$GITHUB_WORKSPACE/watch_screens"
+          xcrun simctl io "$UDID" screenshot "$GITHUB_WORKSPACE/watch_screens/01_home.png"
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: watchos-screenshots
+          path: watch_screens/
+          if-no-files-found: warn
