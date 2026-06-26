@@ -46,6 +46,9 @@ jobs:
           set -x
           APP=$(find build/Build/Products -maxdepth 3 -name "*.app" | head -1)
           echo "App: $APP"
+          echo "=== built Info.plist (diagnostic) ==="
+          plutil -p "$APP/Info.plist" | grep -iE "WKApplication|WKWatchKitApp|WKCompanion|CFBundleIdentifier" || true
+          echo "==================================="
           BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$APP/Info.plist")
           echo "Bundle id: $BUNDLE_ID"
           UDID=$(xcrun simctl list devices available | grep -m1 "Apple Watch" | grep -oE "[0-9A-F-]{36}")
