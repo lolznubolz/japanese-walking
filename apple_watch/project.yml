@@ -13,6 +13,11 @@ targets:
     type: application
     platform: watchOS
     deploymentTarget: "10.0"
+    sources:
+      - path: Sources/WalkBeatApp.swift
+      - path: Sources/ContentView.swift
+      - path: Sources/SessionController.swift
+      - path: Sources/SessionView.swift
     info:
       path: Generated-Info.plist
       properties:
