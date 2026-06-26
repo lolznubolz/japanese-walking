@@ -1,43 +1,27 @@
 #!/usr/bin/env python3
-"""Patches ios/Runner/Info.plist after `flutter create . --platforms=ios`:
- - Bluetooth usage descriptions (flutter_blue_plus needs them for HR straps/watches)
- - background modes (audio for the metronome, bluetooth-central for HR while screen is off)
- - Russian display name
-Run from japanese_walking/ (mirrors tools/patch_android.py)."""
-import re
+"""Adds required Info.plist keys (permissions, display name) for iOS.
+Run from japanese_walking/ after `flutter create . --platforms=ios`."""
 
 PATH = "ios/Runner/Info.plist"
 
-KEYS = """\t<key>NSBluetoothAlwaysUsageDescription</key>
-\t<string>Подключение пульсометра или часов по Bluetooth, чтобы показывать пульс во время тренировки.</string>
-\t<key>NSBluetoothPeripheralUsageDescription</key>
-\t<string>Подключение пульсометра или часов по Bluetooth, чтобы показывать пульс во время тренировки.</string>
-\t<key>UIBackgroundModes</key>
-\t<array>
-\t\t<string>audio</string>
-\t\t<string>bluetooth-central</string>
-\t</array>
+KEYS = """	<key>CFBundleDisplayName</key>
+	<string>WalkBeat</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Подключение пульсометра или часов для показа пульса во время ходьбы</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>Подключение пульсометра или часов для показа пульса во время ходьбы</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
 """
 
 src = open(PATH).read()
-
-# 1) Разрешения и фоновые режимы — один раз, сразу после первого <dict>.
 if "NSBluetoothAlwaysUsageDescription" not in src:
-    src = src.replace("<dict>", "<dict>\n" + KEYS, 1)
-
-# 2) Русское имя на иконке.
-if "CFBundleDisplayName" in src:
-    src = re.sub(
-        r"(<key>CFBundleDisplayName</key>\s*<string>)[^<]*(</string>)",
-        r"\1Японская ходьба\2",
-        src,
-    )
+    # insert just before the final </dict>
+    idx = src.rfind("</dict>")
+    src = src[:idx] + KEYS + src[idx:]
+    open(PATH, "w").write(src)
+    print("Info.plist patched")
 else:
-    src = src.replace(
-        "<dict>",
-        "<dict>\n\t<key>CFBundleDisplayName</key>\n\t<string>Японская ходьба</string>",
-        1,
-    )
-
-open(PATH, "w").write(src)
-print("Info.plist patched (Bluetooth + background + RU name)")
+    print("Info.plist already patched")

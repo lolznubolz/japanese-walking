@@ -1,20 +1,18 @@
-name: Build iOS
+name: Build iOS (cloud test)
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
-  workflow_dispatch:
+    paths:
+      - 'japanese_walking/**'
+      - '.github/workflows/build-ios.yml'
 
 jobs:
   build:
-    runs-on: macos-15   # macOS-раннер с Xcode — обязателен для iOS
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Use newest Xcode (iOS SDK 17.4+ для device_info_plus / isiOSAppOnVision)
-        run: |
-          sudo xcode-select -s "$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)"
-          xcodebuild -version
 
       - uses: subosito/flutter-action@v2
         with:
@@ -28,35 +26,45 @@ jobs:
         working-directory: japanese_walking
         run: python3 tools/generate_audio.py
 
-      - name: Patch Info.plist (Bluetooth + background + RU name)
+      - name: Patch Info.plist (permissions + display name)
         working-directory: japanese_walking
         run: python3 tools/patch_ios.py
 
-      - name: Build iOS (no codesign)
+      - name: Analyze
         working-directory: japanese_walking
         run: |
           flutter pub get
-          flutter build ios --release --no-codesign
+          flutter analyze --no-fatal-infos || true
 
-      - name: Result
-        run: echo "✅ iOS-приложение успешно собралось. Для TestFlight/App Store включим подпись (секреты Apple) — см. README_iOS.md."
+      - name: Build for iOS Simulator (no signing)
+        working-directory: japanese_walking
+        run: flutter build ios --simulator --no-codesign
 
-  # ───────────────────────────────────────────────────────────────────────
-  # ШАГИ НИЖЕ ДОБАВИМ, КОГДА БУДЕТ АККАУНТ APPLE DEVELOPER.
-  # Тогда сборка станет подписанной (.ipa) и сама поедет в TestFlight.
-  # Нужны секреты репозитория:
-  #   APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_KEY_P8
-  #   (App Store Connect → Users and Access → Integrations → App Store Connect API)
-  #
-  #   - name: Import App Store Connect API key
-  #     run: |
-  #       mkdir -p ~/private_keys
-  #       echo "${{ secrets.APP_STORE_CONNECT_KEY_P8 }}" > ~/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8
-  #   - name: Build signed IPA
-  #     working-directory: japanese_walking
-  #     run: flutter build ipa --release --export-method app-store
-  #   - name: Upload to TestFlight
-  #     run: |
-  #       xcrun altool --upload-app -f japanese_walking/build/ios/ipa/*.ipa \
-  #         --apiKey ${{ secrets.APP_STORE_CONNECT_KEY_ID }} \
-  #         --apiIssuer ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }} --type ios
+      - name: Launch in simulator and capture screenshot
+        working-directory: japanese_walking
+        continue-on-error: true
+        run: |
+          set -x
+          APP="build/ios/iphonesimulator/Runner.app"
+          BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$APP/Info.plist")
+          echo "Bundle id: $BUNDLE_ID"
+          UDID=$(xcrun simctl list devices available | grep -E "iPhone 1[5-9]|iPhone 1[0-9] Pro" | head -1 | grep -oE "[0-9A-F-]{36}")
+          if [ -z "$UDID" ]; then
+            UDID=$(xcrun simctl list devices available | grep -m1 "iPhone" | grep -oE "[0-9A-F-]{36}")
+          fi
+          echo "Simulator UDID: $UDID"
+          xcrun simctl boot "$UDID" || true
+          sleep 25
+          xcrun simctl install "$UDID" "$APP"
+          xcrun simctl launch "$UDID" "$BUNDLE_ID" || true
+          sleep 15
+          mkdir -p "$GITHUB_WORKSPACE/ios_screens"
+          xcrun simctl io "$UDID" screenshot "$GITHUB_WORKSPACE/ios_screens/01_launch.png"
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-screenshots
+          path: ios_screens/
+          if-no-files-found: warn
